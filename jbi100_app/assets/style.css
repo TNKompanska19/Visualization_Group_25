@@ -1,9 +1,13 @@
+/* ----------------------------------------
+   GLOBAL STYLING
+----------------------------------------- */
+
 body {
     background-color: #f9f9f9;
     color: #333333;
     font-family: "Helvetica Neue", Arial, sans-serif;
     font-size: 15px;
-    margin: 0px;
+    margin: 0;
 }
 
 #left-column {
@@ -15,7 +19,7 @@ body {
 
 #right-column {
     background-color: #f4f4f4;
-    padding: 0rem 2rem;
+    padding: 20px 2rem;
     min-height: 100vh;
 }
 
@@ -24,25 +28,54 @@ h5 {
     font-weight: 300;
 }
 
-#intro {
-    margin: 20px 0px;
-    text-align: justify;
-}
-
-#control-card label {
-    font-weight: bold;
-}
-
 .graph_card {
     background-color: white;
-    border-radius: 0.675rem;
-    padding: 1rem;
-    margin: auto;
+    border-radius: 10px;
+    padding: 20px;
     margin-top: 20px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.08);
 }
 
-.graph_card h6 {
-    margin:  0 7px;
-    padding-bottom: 7px;
-    border-bottom:  1px solid #ccc;
+.graph_card h3 {
+    font-size: 20px;
+    font-weight: 600;
+    margin-bottom: 12px;
+}
+
+/* ----------------------------------------
+   KPI STYLING
+----------------------------------------- */
+
+.kpi_row {
+    display: flex;
+    justify-content: space-between;
+    gap: 20px;
+    margin-top: 20px;
+    margin-bottom: 20px;
+}
+
+.kpi_box {
+    background: white;
+    border-radius: 10px;
+    padding: 22px 25px;
+    flex: 1;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.kpi_box:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 14px rgba(0,0,0,0.12);
+}
+
+.kpi_title {
+    font-size: 14px;
+    font-weight: 500;
+    color: #555;
+    margin-bottom: 5px;
+}
+
+.kpi_value {
+    font-size: 26px;
+    font-weight: bold;
 }
