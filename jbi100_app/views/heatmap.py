@@ -21,7 +21,14 @@ class Heatmap:
             x="week",
             y="service",
             z="pressure_index",
-            color_continuous_scale="RdYlGn_r"
+            color_continuous_scale="RdYlGn_r",
+            nbinsx=52  # <-- FIX: one bin per week
         )
-        fig.update_layout(height=600)
+
+        # FIX: make weeks appear as 1,2,3,... instead of bins
+        fig.update_layout(
+            height=600,
+            xaxis=dict(type="category")
+        )
+
         return fig

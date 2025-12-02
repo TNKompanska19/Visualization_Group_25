@@ -37,9 +37,8 @@ service_options = [{"label": "All services", "value": "ALL"}] + [
 
 # ============================================================
 # INSTANTIATE STATIC LAYOUT COMPONENTS
-# (figures will be updated via callbacks)
 # ============================================================
-heatmap = Heatmap(df_services)  # provides html.Div + Graph(id="heatmap-graph")
+heatmap = Heatmap(df_services)
 
 trend_demand, trend_morale = make_trend_charts(df_services)
 
@@ -104,7 +103,7 @@ app.layout = html.Div(
                 # HEATMAP
                 heatmap.layout(),
 
-                # KPI ROW (global summary)
+                # KPI ROW
                 kpi_row,
 
                 # TREND CHARTS
@@ -129,7 +128,6 @@ app.layout = html.Div(
 # ============================================================
 
 def filter_services_df(service_value, week_range):
-    """Filter df_services by chosen service and week range."""
     week_lo, week_hi = week_range
     df = df_services[(df_services["week"] >= week_lo) & (df_services["week"] <= week_hi)]
     if service_value != "ALL":
@@ -138,14 +136,7 @@ def filter_services_df(service_value, week_range):
 
 
 def resolve_active_service(service_dropdown_value, heatmap_click):
-    """
-    Decide which service is 'active':
-    - If user clicked the heatmap: use that service.
-    - Else, if dropdown != ALL: use dropdown.
-    - Else: None (no service-specific filter).
-    """
     if heatmap_click and "points" in heatmap_click and len(heatmap_click["points"]) > 0:
-        # y axis of heatmap is the service
         return heatmap_click["points"][0].get("y", None)
 
     if service_dropdown_value != "ALL":
@@ -155,7 +146,7 @@ def resolve_active_service(service_dropdown_value, heatmap_click):
 
 
 # ============================================================
-# CALLBACK: Info text under filters
+# CALLBACK: Filter Info Text
 # ============================================================
 @app.callback(
     Output("filter-info", "children"),
@@ -171,7 +162,7 @@ def update_filter_info(service_value, week_range):
 
 
 # ============================================================
-# CALLBACK: Heatmap
+# CALLBACK: Heatmap (FIXED)
 # ============================================================
 @app.callback(
     Output("heatmap-graph", "figure"),
@@ -187,13 +178,21 @@ def update_heatmap(service_value, week_range):
         y="service",
         z="pressure_index",
         color_continuous_scale="RdYlGn_r",
+        nbinsx=52  # <-- FIX: One bin per week
     )
-    fig.update_layout(height=600, margin=dict(l=40, r=40, t=60, b=40))
+
+    # FIX: Force exact 1–52 labels instead of bin ranges like 50–59
+    fig.update_layout(
+        height=600,
+        margin=dict(l=40, r=40, t=60, b=40),
+        xaxis=dict(type="category")
+    )
+
     return fig
 
 
 # ============================================================
-# CALLBACK: Trend charts (demand + morale)
+# CALLBACK: Trend charts
 # ============================================================
 @app.callback(
     Output("trend-demand", "figure"),
@@ -240,7 +239,7 @@ def update_trends(service_value, week_range):
 
 
 # ============================================================
-# CALLBACK: LOS boxplots (service + age group)
+# CALLBACK: LOS boxplots
 # ============================================================
 @app.callback(
     Output("los-boxplot-service", "figure"),
@@ -252,24 +251,20 @@ def update_trends(service_value, week_range):
 def update_los(service_value, week_range, heatmap_click):
     week_lo, week_hi = week_range
 
-    # Filter patients by arrival week
     df = df_patients[
         (df_patients["arrival_week"] >= week_lo) &
         (df_patients["arrival_week"] <= week_hi)
     ].copy()
 
-    # Decide which service is active (dropdown vs heatmap click)
     active_service = resolve_active_service(service_value, heatmap_click)
 
     if active_service is not None:
         df = df[df["service"] == active_service]
 
-    # ---------- LOS by service ----------
+    # LOS by service
     if df.empty:
         fig_service = go.Figure()
-        fig_service.update_layout(
-            title="LOS per Service (no data for current filters)"
-        )
+        fig_service.update_layout(title="LOS per Service (no data for current filters)")
     else:
         fig_service = px.box(
             df,
@@ -281,14 +276,11 @@ def update_los(service_value, week_range, heatmap_click):
         )
         fig_service.update_layout(height=450, margin=dict(t=60))
 
-    # ---------- LOS by age group ----------
+    # LOS by age group
     if df.empty:
         fig_age = go.Figure()
-        fig_age.update_layout(
-            title="LOS per Age Group (no data for current filters)"
-        )
+        fig_age.update_layout(title="LOS per Age Group (no data for current filters)")
     else:
-        # Age groups like in your LOSBoxplot class
         import pandas as pd
         bins = [0, 12, 19, 64, 79, 200]
         labels = ["Child (0-12)", "Teen (13-19)", "Adult (20-64)", "Senior (65-79)", "Elderly (80+)"]
