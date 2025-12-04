@@ -3,10 +3,6 @@ from ..config import color_list1, color_list2
 
 
 def generate_description_card():
-    """
-
-    :return: A Div containing dashboard title & descriptions.
-    """
     return html.Div(
         id="description-card",
         children=[
@@ -15,15 +11,15 @@ def generate_description_card():
                 id="intro",
                 children="You can use this as a basic template for your JBI100 visualization project.",
             ),
+            html.Div(
+                "LOS = Length of Stay (number of days a patient remains in the hospital).",
+                style={"fontSize": "13px", "color": "#666", "marginTop": "10px"},
+            ),
         ],
     )
 
 
 def generate_control_card():
-    """
-
-    :return: A Div containing controls for graphs.
-    """
     return html.Div(
         id="control-card",
         children=[
@@ -40,7 +36,8 @@ def generate_control_card():
                 options=[{"label": i, "value": i} for i in color_list2],
                 value=color_list2[0],
             ),
-        ], style={"textAlign": "float-left"}
+        ],
+        style={"textAlign": "float-left"},
     )
 
 
