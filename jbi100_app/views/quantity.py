@@ -1,181 +1,131 @@
 """
 Quantity Widget (T2, T3): Capacity & Patient Flow Analysis
+JBI100 Visualization - Group 25
+
+Tasks:
 - T2: Explore distribution/extremes of bed allocation
 - T3: Summarize stay duration distribution
-- Expanded: Scatter + Bar + Box plots
-- Mini: Refused count + utilization %
+
+Visual Encoding Justification:
+- Scatter plot: Shows relationship between beds and refusal rate
+- Box plot: Distribution summary for length of stay
+- Bar chart: Categorical comparison of refusals by service
 """
 
-from dash import dcc, html
 import plotly.graph_objects as go
-from jbi100_app.config import COLORS, SEMANTIC
+from dash import html, dcc
+
+from jbi100_app.config import DEPT_COLORS, DEPT_LABELS, WIDGET_INFO, CHART_CONFIG
 
 
-def create_quantity_expanded(services_df, patients_df, selection):
-    """Create expanded quantity widget content."""
+def create_quantity_expanded(services_df, patients_df, selected_depts, week_range):
+    """
+    Create the expanded quantity widget layout.
     
-    week_range = selection.get("week_range", [1, 52])
-    filtered_svc = services_df[(services_df['week'] >= week_range[0]) & (services_df['week'] <= week_range[1])]
+    Args:
+        services_df: Services dataframe
+        patients_df: Patients dataframe
+        selected_depts: List of department IDs
+        week_range: tuple of (start_week, end_week)
     
-    return html.Div(
-        className="widget-expanded",
+    Returns:
+        dash.html.Div component
+    """
+    info = WIDGET_INFO["quantity"]
+    
+    header = html.Div(
+        style={
+            "paddingBottom": "8px",
+            "marginBottom": "10px",
+            "borderBottom": "2px solid #eee",
+            "flexShrink": "0"
+        },
         children=[
-            html.Div(className="widget-header", children=[
-                html.H5("Capacity & Patient Flow Analysis", className="widget-title"),
-                html.Span("T2: Bed allocation | T3: Stay duration", className="widget-subtitle")
-            ]),
-            html.Div(className="widget-content", children=[
-                # Top row: Scatter + Bar
-                html.Div(className="chart-row", style={'flex': '1.2'}, children=[
-                    html.Div(className="chart-container wide", children=[
-                        html.Div("Beds vs Refusal Rate (T2)", className="chart-title"),
-                        dcc.Graph(
-                            id="quantity-scatter",
-                            figure=_create_scatter(filtered_svc),
-                            style={'height': '100%'},
-                            config={'displayModeBar': False}
-                        )
-                    ]),
-                    html.Div(className="chart-container narrow", children=[
-                        html.Div("Refusals by Service", className="chart-title"),
-                        dcc.Graph(
-                            id="quantity-bar",
-                            figure=_create_bar(filtered_svc),
-                            style={'height': '100%'},
-                            config={'displayModeBar': False}
-                        )
-                    ])
-                ]),
-                # Bottom: Box plots
-                html.Div(className="chart-row", style={'flex': '0.8', 'marginTop': '10px'}, children=[
-                    html.Div(className="chart-container", children=[
-                        html.Div("Length of Stay Distribution (T3)", className="chart-title"),
-                        dcc.Graph(
-                            id="quantity-boxplot",
-                            figure=_create_boxplot(patients_df),
-                            style={'height': '100%'},
-                            config={'displayModeBar': False}
-                        )
-                    ])
-                ])
-            ])
+            html.H4(
+                f"{info['icon']} {info['title']}",
+                style={"margin": "0", "color": "#2c3e50", "fontWeight": "500"}
+            ),
+            html.Span(info["subtitle"], style={"fontSize": "12px", "color": "#999"})
         ]
     )
+    
+    # Placeholder content - to be implemented
+    content = html.Div(
+        style={
+            "flex": "1",
+            "backgroundColor": "#f8f9fa",
+            "borderRadius": "8px",
+            "display": "flex",
+            "alignItems": "center",
+            "justifyContent": "center",
+            "color": "#bbb",
+            "fontSize": "18px"
+        },
+        children=["[ QUANTITY CHARTS - T2 & T3 ]"]
+    )
+    
+    return html.Div(
+        style={"height": "100%", "display": "flex", "flexDirection": "column"},
+        children=[header, content]
+    )
 
 
-def create_quantity_mini(services_df, selection):
-    """Create mini quantity card."""
+def create_quantity_mini(services_df, selected_depts, week_range):
+    """
+    Create the mini quantity widget card.
     
-    week_range = selection.get("week_range", [1, 52])
-    filtered = services_df[(services_df['week'] >= week_range[0]) & (services_df['week'] <= week_range[1])]
+    Args:
+        services_df: Services dataframe
+        selected_depts: List of department IDs
+        week_range: tuple of (start_week, end_week)
     
-    total_refused = filtered['patients_refused'].sum()
-    avg_util = filtered['utilization_rate'].mean()
-    by_service = services_df.groupby('service')['patients_refused'].sum().sort_values()
+    Returns:
+        dash.html.Div component
+    """
+    info = WIDGET_INFO["quantity"]
+    
+    # Calculate summary metrics
+    week_min, week_max = week_range
+    filtered = services_df[(services_df["week"] >= week_min) & (services_df["week"] <= week_max)]
+    
+    if selected_depts:
+        filtered = filtered[filtered["service"].isin(selected_depts)]
+    
+    total_refused = filtered["patients_refused"].sum() if len(filtered) > 0 else 0
+    avg_utilization = filtered["utilization_rate"].mean() if len(filtered) > 0 else 0
     
     return html.Div([
-        html.Div(className="mini-header", children=[
-            html.Span("📦 Capacity", className="mini-title")
-        ]),
-        html.Div(className="mini-content", children=[
-            html.Div(className="mini-metrics", children=[
-                html.Div(className="mini-metric", children=[
-                    html.Span(f"{total_refused:,}", className="mini-metric-value"),
-                    html.Span("Refused", className="mini-metric-label")
-                ]),
-                html.Div(className="mini-metric", children=[
-                    html.Span(f"{avg_util:.0f}%", className="mini-metric-value"),
-                    html.Span("Utilization", className="mini-metric-label")
-                ])
-            ]),
-            dcc.Graph(figure=_mini_bar(by_service), config={'displayModeBar': False}, style={'height': '45px'})
-        ])
+        html.Div(
+            f"{info['icon']} {info['title']}",
+            style={"fontWeight": "600", "fontSize": "14px", "marginBottom": "5px", "color": "#2c3e50"}
+        ),
+        html.Div(
+            info["subtitle"],
+            style={"fontSize": "11px", "color": "#999", "marginBottom": "8px"}
+        ),
+        html.Div(
+            style={
+                "flex": "1",
+                "backgroundColor": "#f8f9fa",
+                "borderRadius": "6px",
+                "display": "flex",
+                "alignItems": "center",
+                "justifyContent": "space-around",
+                "padding": "10px"
+            },
+            children=[
+                html.Div([
+                    html.Div(f"{total_refused:,}", style={"fontSize": "18px", "fontWeight": "600", "color": "#e74c3c"}),
+                    html.Div("Refused", style={"fontSize": "10px", "color": "#95a5a6"})
+                ], style={"textAlign": "center"}),
+                html.Div([
+                    html.Div(f"{avg_utilization:.0f}%", style={"fontSize": "18px", "fontWeight": "600", "color": "#3498db"}),
+                    html.Div("Utilization", style={"fontSize": "10px", "color": "#95a5a6"})
+                ], style={"textAlign": "center"})
+            ]
+        ),
+        html.Div(
+            "↑ Click to expand",
+            style={"fontSize": "11px", "color": "#3498db", "fontWeight": "500", "marginTop": "8px", "textAlign": "center"}
+        )
     ])
-
-
-def _create_scatter(df):
-    fig = go.Figure()
-    
-    for service in df['service'].unique():
-        svc_df = df[df['service'] == service]
-        fig.add_trace(go.Scatter(
-            x=svc_df['available_beds'],
-            y=svc_df['refusal_rate'],
-            mode='markers',
-            name=service.replace('_', ' ').title(),
-            marker=dict(color=COLORS.get(service, '#999'), size=8, line=dict(width=1, color='white')),
-            text=svc_df['week'],
-            hovertemplate=f"<b>{service.replace('_', ' ').title()}</b><br>Week %{{text}}<br>Beds: %{{x}}<br>Refusal: %{{y:.1f}}%<extra></extra>"
-        ))
-    
-    avg = df['refusal_rate'].mean()
-    fig.add_hline(y=avg, line_dash="dash", line_color="gray", annotation_text=f"Avg: {avg:.1f}%")
-    
-    fig.update_layout(
-        margin=dict(l=50, r=20, t=10, b=40),
-        xaxis=dict(title='Available Beds'),
-        yaxis=dict(title='Refusal Rate (%)'),
-        legend=dict(orientation='h', y=-0.15, x=0.5, xanchor='center'),
-        plot_bgcolor='white',
-        hovermode='closest'
-    )
-    return fig
-
-
-def _create_bar(df):
-    summary = df.groupby('service')['patients_refused'].sum().reset_index()
-    summary['label'] = summary['service'].str.replace('_', ' ').str.title()
-    summary = summary.sort_values('patients_refused', ascending=True)
-    
-    fig = go.Figure(data=go.Bar(
-        y=summary['label'],
-        x=summary['patients_refused'],
-        orientation='h',
-        marker=dict(color=[COLORS.get(s, '#999') for s in summary['service']]),
-        text=summary['patients_refused'],
-        textposition='auto'
-    ))
-    
-    fig.update_layout(
-        margin=dict(l=100, r=20, t=10, b=30),
-        xaxis=dict(title='Total'),
-        yaxis=dict(title=''),
-        plot_bgcolor='white'
-    )
-    return fig
-
-
-def _create_boxplot(patients_df):
-    fig = go.Figure()
-    
-    for service in patients_df['service'].unique():
-        svc_df = patients_df[patients_df['service'] == service]
-        fig.add_trace(go.Box(
-            y=svc_df['length_of_stay'],
-            name=service.replace('_', ' ').title(),
-            marker=dict(color=COLORS.get(service, '#999')),
-            boxmean='sd'
-        ))
-    
-    fig.update_layout(
-        margin=dict(l=50, r=20, t=10, b=30),
-        yaxis=dict(title='Days'),
-        showlegend=False,
-        plot_bgcolor='white'
-    )
-    return fig
-
-
-def _mini_bar(data):
-    colors = [COLORS.get(s, '#999') for s in data.index]
-    labels = [s[:3].upper() for s in data.index]
-    
-    fig = go.Figure(data=go.Bar(x=labels, y=data.values, marker=dict(color=colors)))
-    fig.update_layout(
-        margin=dict(l=0, r=0, t=0, b=15),
-        xaxis=dict(tickfont=dict(size=9)),
-        yaxis=dict(visible=False),
-        plot_bgcolor='transparent', paper_bgcolor='transparent',
-        bargap=0.3
-    )
-    return fig

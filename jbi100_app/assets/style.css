@@ -1,4 +1,17 @@
-/* Animations - more noticeable */
+/*
+Hospital Operations Dashboard - Styles
+JBI100 Visualization - Group 25
+
+This stylesheet provides:
+- Animations for widget transitions
+- Hover effects for interactive elements
+- Consistent styling across components
+*/
+
+/* =============================================================================
+   ANIMATIONS
+   ============================================================================= */
+
 @keyframes fadeIn {
     0% { 
         opacity: 0; 
@@ -32,13 +45,108 @@
     animation: popIn 0.35s ease-out;
 }
 
-/* Hover effect for mini widgets */
-.mini-widget {
+
+/* =============================================================================
+   INTERACTIVE ELEMENTS
+   ============================================================================= */
+
+/* Mini widget hover effect */
+#mini-slot-1,
+#mini-slot-2 {
     transition: all 0.2s ease;
 }
 
-.mini-widget:hover {
+#mini-slot-1:hover,
+#mini-slot-2:hover {
     transform: translateY(-4px);
     box-shadow: 0 8px 25px rgba(0,0,0,0.15) !important;
+    border: 1px solid #3498db;
+}
+
+/* Button hover effects */
+button {
+    transition: all 0.15s ease;
+}
+
+button:hover {
+    filter: brightness(1.1);
+}
+
+button:active {
+    transform: scale(0.98);
+}
+
+
+/* =============================================================================
+   SCROLLBAR STYLING
+   ============================================================================= */
+
+::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+}
+
+::-webkit-scrollbar-track {
+    background: #f1f1f1;
+    border-radius: 3px;
+}
+
+::-webkit-scrollbar-thumb {
+    background: #c1c1c1;
+    border-radius: 3px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+    background: #a1a1a1;
+}
+
+
+/* =============================================================================
+   TOOLTIP PANEL STYLING
+   ============================================================================= */
+
+#side-tooltip {
+    transition: all 0.2s ease;
+}
+
+
+/* =============================================================================
+   RANGE SLIDER CUSTOMIZATION
+   ============================================================================= */
+
+.rc-slider-track {
+    background-color: #3498db !important;
+}
+
+.rc-slider-handle {
     border-color: #3498db !important;
+}
+
+.rc-slider-handle:hover,
+.rc-slider-handle:active {
+    border-color: #2980b9 !important;
+    box-shadow: 0 0 5px #3498db;
+}
+
+
+/* =============================================================================
+   CHECKBOX STYLING
+   ============================================================================= */
+
+input[type="checkbox"] {
+    accent-color: #3498db;
+}
+
+
+/* =============================================================================
+   CHART CONTAINER
+   ============================================================================= */
+
+#chart-container {
+    transition: all 0.2s ease;
+}
+
+/* Plotly chart customization */
+.js-plotly-plot .plotly .modebar {
+    display: none !important;
 }
