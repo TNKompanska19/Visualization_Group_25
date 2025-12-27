@@ -90,7 +90,7 @@ WIDGET_INFO = {
 # =============================================================================
 
 ZOOM_THRESHOLDS = {
-    "detail": 6,    # ≤6 weeks: Show everything
+    "detail": 8,    # ≤8 weeks: Show histograms + thresholds
     "quarter": 16   # ≤16 weeks: Show events + larger markers
     # >16 weeks: Overview mode
 }

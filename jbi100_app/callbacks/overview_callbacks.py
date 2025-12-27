@@ -5,50 +5,122 @@ JBI100 Visualization - Group 25
 Callbacks for the Overview widget (T1):
 - Hover interactions
 - Tooltip updates
-- Highlight synchronization
+- Histogram updates (detail zoom)
 """
 
 from dash import callback, Output, Input, State, html
+from dash.exceptions import PreventUpdate
+import numpy as np
 
-from jbi100_app.config import DEPT_COLORS, DEPT_LABELS_SHORT, EVENT_COLORS, EVENT_ICONS
+from jbi100_app.config import DEPT_COLORS, DEPT_LABELS_SHORT
 from jbi100_app.data import get_services_data
+from jbi100_app.views.overview import build_tooltip_content, get_zoom_level
 
-# Load data for event lookup
 _services_df = get_services_data()
+
+# Cache for histogram bin data (computed once per dept selection)
+_HIST_CACHE = {}
+
+
+def _get_cached_histogram_data(selected_depts, metric):
+    """Get or compute cached KDE data."""
+    from scipy import stats
+    
+    cache_key = (tuple(sorted(selected_depts or [])), metric)
+    
+    if cache_key not in _HIST_CACHE:
+        if selected_depts:
+            filtered = _services_df[_services_df["service"].isin(selected_depts)]
+        else:
+            filtered = _services_df
+        
+        values = filtered[metric].values
+        
+        # Compute KDE
+        kde = stats.gaussian_kde(values)
+        x_range = np.linspace(0, 100, 200)
+        y_density = kde(x_range)
+        
+        _HIST_CACHE[cache_key] = {
+            "x_range": x_range,
+            "y_density": y_density
+        }
+    
+    return _HIST_CACHE[cache_key]
+
+
+def _create_histogram_figure(kde_data, metric, highlight_value=None):
+    """Create KDE figure from cached data."""
+    import plotly.graph_objects as go
+    
+    x_range = kde_data["x_range"]
+    y_density = kde_data["y_density"]
+    
+    fig = go.Figure()
+    
+    # Fill area under curve (gray background)
+    fig.add_trace(go.Scatter(
+        x=x_range,
+        y=y_density,
+        mode='lines',
+        fill='tozeroy',
+        line=dict(color='#ccc', width=1),
+        fillcolor='rgba(200,200,200,0.5)',
+        hoverinfo='skip'
+    ))
+    
+    # Add highlighted region if value provided
+    if highlight_value is not None:
+        highlight_width = 3
+        mask = (x_range >= highlight_value - highlight_width) & (x_range <= highlight_value + highlight_width)
+        
+        fig.add_trace(go.Scatter(
+            x=x_range[mask],
+            y=y_density[mask],
+            mode='lines',
+            fill='tozeroy',
+            line=dict(color='#3498db', width=2),
+            fillcolor='rgba(52, 152, 219, 0.6)',
+            hoverinfo='skip'
+        ))
+    
+    title_text = "Satisfaction" if "satisfaction" in metric else "Acceptance"
+    
+    fig.update_layout(
+        height=175,
+        margin=dict(l=5, r=5, t=20, b=20),
+        plot_bgcolor="white",
+        paper_bgcolor="rgba(0,0,0,0)",
+        title=dict(text=title_text, font=dict(size=9, color="#666"), x=0.5, y=0.95),
+        xaxis=dict(range=[0, 100], tickvals=[0, 25, 50, 75, 100], tickfont=dict(size=7), showgrid=False),
+        yaxis=dict(showticklabels=False, showgrid=False),
+        showlegend=False
+    )
+    
+    return fig
 
 
 def register_overview_callbacks():
     """Register all overview widget callbacks."""
     
-    # =========================================================================
-    # HOVER INTERACTION
-    # =========================================================================
     @callback(
-        [Output("tooltip-content", "children"), Output("hover-highlight", "style")],
+        [Output("tooltip-content", "children"),
+         Output("hover-highlight", "style")],
         [Input("overview-chart", "hoverData")],
         [State("week-data-store", "data"), 
          State("dept-filter", "value"), 
          State("current-week-range", "data")],
         prevent_initial_call=True
     )
-    def update_hover(hoverData, weekData, selectedDepts, weekRange):
-        """
-        Update tooltip content and highlight position on hover.
-        
-        This callback:
-        1. Reads hover position from the chart
-        2. Looks up data for that week
-        3. Updates the side tooltip panel
-        4. Moves the highlight bar to the correct position
-        """
+    def update_tooltip_and_highlight(hoverData, weekData, selectedDepts, weekRange):
+        """Update tooltip and vertical line indicator on hover."""
         base_style = {
             "position": "absolute",
-            "top": "15px",
-            "bottom": "25px",
-            "width": "14px",
-            "backgroundColor": "rgba(52, 152, 219, 0.2)",
+            "top": "10px", "bottom": "30px",
+            "width": "3px",
+            "backgroundColor": "rgba(52, 152, 219, 0.6)",
             "pointerEvents": "none",
-            "borderRadius": "3px"
+            "borderRadius": "2px"
         }
         default_tooltip = [
             html.Div("Hover over", style={"color": "#999", "textAlign": "center"}),
@@ -56,135 +128,77 @@ def register_overview_callbacks():
         ]
         
         if not hoverData or not hoverData.get("points"):
-            return default_tooltip, {**base_style, "display": "none", "left": "60px"}
+            return default_tooltip, {**base_style, "display": "none", "left": "40px"}
         
         point = hoverData["points"][0]
         week = round(point["x"])
         weekMin, weekMax = weekRange
         
         if week < weekMin or week > weekMax:
-            return default_tooltip, {**base_style, "display": "none", "left": "60px"}
+            return default_tooltip, {**base_style, "display": "none", "left": "40px"}
         
-        # Get position from bbox (pixel coordinates)
+        # Get center position from bbox
         bbox = point.get("bbox", {})
-        xPos = bbox.get("x0", 60)
+        x0 = bbox.get("x0", 40)
+        x1 = bbox.get("x1", x0 + 10)
+        xCenter = (x0 + x1) / 2  # Center of the point
         
-        # Build tooltip content
-        tooltip_children = _build_tooltip_content(week, weekData, selectedDepts)
-        
-        highlight_style = {**base_style, "display": "block", "left": f"{xPos - 7}px"}
-        return tooltip_children, highlight_style
-
-
-def _build_tooltip_content(week, week_data, selected_depts):
-    """
-    Build the tooltip HTML content.
-    
-    Args:
-        week: Current week number
-        week_data: Dict from dcc.Store with all week data
-        selected_depts: List of selected department IDs
-    
-    Returns:
-        list: List of dash html components
-    """
-    # Check for events this week
-    week_events = _services_df[
-        (_services_df["week"] == week) & (_services_df["event"] != "none")
-    ]["event"].unique()
-    
-    tooltip_children = [
-        html.Div(
-            f"Week {week}",
-            style={
-                "fontWeight": "600",
-                "fontSize": "13px",
-                "color": "#2c3e50",
-                "paddingBottom": "6px",
-                "marginBottom": "8px",
-                "borderBottom": "2px solid #3498db"
-            }
+        tooltip_children = build_tooltip_content(
+            week, weekData, selectedDepts or [], _services_df, weekRange
         )
-    ]
+        
+        # Position line at center of hovered point
+        highlight_style = {**base_style, "display": "block", "left": f"{xCenter - 1.5}px"}
+        return tooltip_children, highlight_style
     
-    # Add event badges if present
-    if len(week_events) > 0:
-        for evt in week_events:
-            if evt in EVENT_ICONS:
-                evt_color = EVENT_COLORS.get(evt, "#95a5a6")
-                tooltip_children.append(
-                    html.Div(
-                        style={
-                            "display": "flex",
-                            "alignItems": "center",
-                            "gap": "4px",
-                            "marginBottom": "6px",
-                            "padding": "3px 6px",
-                            "backgroundColor": evt_color + "20",
-                            "borderRadius": "4px",
-                            "border": f"1px solid {evt_color}"
-                        },
-                        children=[
-                            html.Span(EVENT_ICONS[evt], style={"fontSize": "12px"}),
-                            html.Span(evt.capitalize(), style={
-                                "fontSize": "10px", 
-                                "color": evt_color, 
-                                "fontWeight": "600"
-                            })
-                        ]
-                    )
-                )
-    
-    # Satisfaction section
-    tooltip_children.append(
-        html.Div("SATISFACTION", style={
-            "fontSize": "9px", 
-            "color": "#888", 
-            "marginBottom": "4px", 
-            "fontWeight": "600"
-        })
+    @callback(
+        [Output("hist-satisfaction", "figure"),
+         Output("hist-acceptance", "figure")],
+        [Input("overview-chart", "hoverData")],
+        [State("week-data-store", "data"), 
+         State("dept-filter", "value"), 
+         State("current-week-range", "data")],
+        prevent_initial_call=True
     )
-    
-    for dept in (selected_depts or []):
-        data = week_data.get(str(week), {}).get(dept)
-        if data:
-            tooltip_children.append(
-                html.Div(
-                    style={"display": "flex", "justifyContent": "space-between", "marginBottom": "2px"},
-                    children=[
-                        html.Span(DEPT_LABELS_SHORT.get(dept, dept), style={"color": "#555"}),
-                        html.Span(str(data["satisfaction"]), style={
-                            "fontWeight": "600", 
-                            "color": DEPT_COLORS.get(dept, "#999")
-                        })
-                    ]
-                )
+    def update_histograms(hoverData, weekData, selectedDepts, weekRange):
+        """Update histogram highlighting on hover."""
+        zoom_level = get_zoom_level(weekRange)
+        if zoom_level != "detail":
+            raise PreventUpdate
+        
+        sat_hist_data = _get_cached_histogram_data(selectedDepts, "patient_satisfaction")
+        acc_hist_data = _get_cached_histogram_data(selectedDepts, "acceptance_rate")
+        
+        if not hoverData or not hoverData.get("points"):
+            return (
+                _create_histogram_figure(sat_hist_data, "patient_satisfaction", None),
+                _create_histogram_figure(acc_hist_data, "acceptance_rate", None)
             )
-    
-    # Acceptance section
-    tooltip_children.append(
-        html.Div("ACCEPTANCE %", style={
-            "fontSize": "9px", 
-            "color": "#888", 
-            "margin": "8px 0 4px 0", 
-            "fontWeight": "600"
-        })
-    )
-    
-    for dept in (selected_depts or []):
-        data = week_data.get(str(week), {}).get(dept)
-        if data:
-            tooltip_children.append(
-                html.Div(
-                    style={"display": "flex", "justifyContent": "space-between", "marginBottom": "2px"},
-                    children=[
-                        html.Span(DEPT_LABELS_SHORT.get(dept, dept), style={"color": "#555"}),
-                        html.Span(f"{data['acceptance']}%", style={
-                            "fontWeight": "600", 
-                            "color": DEPT_COLORS.get(dept, "#999")
-                        })
-                    ]
-                )
+        
+        point = hoverData["points"][0]
+        week = round(point["x"])
+        weekMin, weekMax = weekRange
+        
+        if week < weekMin or week > weekMax:
+            return (
+                _create_histogram_figure(sat_hist_data, "patient_satisfaction", None),
+                _create_histogram_figure(acc_hist_data, "acceptance_rate", None)
             )
-    
-    return tooltip_children
+        
+        week_data_for_hover = weekData.get(str(week), {})
+        
+        sat_values = []
+        acc_values = []
+        for dept in (selectedDepts or []):
+            dept_data = week_data_for_hover.get(dept)
+            if dept_data:
+                sat_values.append(dept_data.get("satisfaction", 0))
+                acc_values.append(dept_data.get("acceptance", 0))
+        
+        avg_sat = sum(sat_values) / len(sat_values) if sat_values else None
+        avg_acc = sum(acc_values) / len(acc_values) if acc_values else None
+        
+        return (
+            _create_histogram_figure(sat_hist_data, "patient_satisfaction", avg_sat),
+            _create_histogram_figure(acc_hist_data, "acceptance_rate", avg_acc)
+        )

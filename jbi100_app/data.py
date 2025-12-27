@@ -39,25 +39,29 @@ def get_services_data():
     """
     df = load_services_weekly()
     
-    # Acceptance rate (inverse of refusal - for consistent "down = bad" UX)
-    df["acceptance_rate"] = (
-        df["patients_admitted"] / df["patients_request"].replace(0, 1) * 100
-    ).round(1)
+    # Acceptance rate - use pre-computed if exists, else compute
+    if "acceptance_rate" not in df.columns:
+        df["acceptance_rate"] = (
+            df["patients_admitted"] / df["patients_request"].replace(0, 1) * 100
+        ).round(1)
     
     # Refusal rate
-    df["refusal_rate"] = (
-        df["patients_refused"] / df["patients_request"].replace(0, 1) * 100
-    ).round(1)
+    if "refusal_rate" not in df.columns:
+        df["refusal_rate"] = (
+            df["patients_refused"] / df["patients_request"].replace(0, 1) * 100
+        ).round(1)
     
     # Bed utilization
-    df["utilization_rate"] = (
-        df["patients_admitted"] / df["available_beds"].replace(0, 1) * 100
-    ).round(1)
+    if "utilization_rate" not in df.columns:
+        df["utilization_rate"] = (
+            df["patients_admitted"] / df["available_beds"].replace(0, 1) * 100
+        ).round(1)
     
     # Pressure index (demand vs capacity)
-    df["pressure_index"] = (
-        df["patients_request"] / df["available_beds"].replace(0, 1)
-    ).round(2)
+    if "pressure_index" not in df.columns:
+        df["pressure_index"] = (
+            df["patients_request"] / df["available_beds"].replace(0, 1)
+        ).round(2)
     
     return df
 
