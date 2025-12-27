@@ -57,9 +57,11 @@ def register_widget_callbacks():
          Output("mini-slot-2", "children")],
         [Input("expanded-widget", "data"),
          Input("dept-filter", "value"),
-         Input("week-slider", "value")]
+         Input("week-slider", "value"),
+         Input("show-events-toggle", "value"),
+         Input("hide-anomalies-toggle", "value")]
     )
-    def render_widgets(expanded, selected_depts, week_range):
+    def render_widgets(expanded, selected_depts, week_range, show_events_list, hide_anomalies_list):
         """
         Render all widgets based on current state.
         
@@ -77,13 +79,17 @@ def register_widget_callbacks():
         """
         selected_depts = selected_depts or ["emergency"]
         
+        # Convert checkbox lists to booleans
+        show_events = "show" in (show_events_list or [])
+        hide_anomalies = "hide" in (hide_anomalies_list or [])
+        
         widgets = ["overview", "quantity", "quality"]
         others = [w for w in widgets if w != expanded]
         
         # Create expanded widget
         if expanded == "overview":
             main_content = create_overview_expanded(
-                _services_df, selected_depts, week_range
+                _services_df, selected_depts, week_range, show_events, hide_anomalies
             )
         elif expanded == "quantity":
             main_content = create_quantity_expanded(

@@ -17,7 +17,8 @@ from dash import html, dcc
 
 from jbi100_app.config import (
     DEPT_COLORS, DEPT_LABELS, DEPT_LABELS_SHORT,
-    EVENT_COLORS, EVENT_ICONS, WIDGET_INFO, ZOOM_THRESHOLDS, CHART_CONFIG
+    EVENT_COLORS, EVENT_ICONS, WIDGET_INFO, ZOOM_THRESHOLDS, CHART_CONFIG,
+    SEMANTIC_COLORS
 )
 
 
@@ -33,17 +34,29 @@ def get_zoom_level(week_range):
         return "overview"
 
 
-def create_overview_charts(df, selected_depts, week_range):
-    """Create the main overview visualization with threshold lines and event markers."""
+def create_overview_charts(df, selected_depts, week_range, show_events=True, hide_anomalies=False):
+    """Create the main overview visualization with threshold lines and event markers.
+    
+    Args:
+        show_events: If True, display event markers (default: True)
+        hide_anomalies: If True, filter out weeks with data anomalies (default: False)
+    """
     week_min, week_max = week_range
     zoom_level = get_zoom_level(week_range)
     
-    # Create subplots WITHOUT centered titles
+    # Filter out anomaly weeks if requested
+    # Anomaly = weeks with no staff assigned (data quality issue)
+    if hide_anomalies:
+        # Identify weeks where ALL departments have zero staff
+        # (You may need to adjust this logic based on your staff_schedule data)
+        df = df[df["patients_admitted"] > 0].copy()  # Filter out weeks with no admissions
+    
+    # Create subplots with more vertical spacing for events
     fig = make_subplots(
         rows=2, cols=1,
         shared_xaxes=True,
-        vertical_spacing=0.18,  # Space for events between plots
-        subplot_titles=None  # No centered titles
+        vertical_spacing=0.18,  # Large gap to accommodate many stacked event markers
+        subplot_titles=None
     )
     
     marker_sizes = {"overview": 5, "quarter": 8, "detail": 10}
@@ -51,80 +64,185 @@ def create_overview_charts(df, selected_depts, week_range):
     marker_size = marker_sizes[zoom_level]
     line_width = line_widths[zoom_level]
     
-    for dept in selected_depts:
+    # Store original marker size for hover effect
+    base_marker_size = marker_size
+    
+    # Add traces with hover-responsive markers
+    for dept_idx, dept in enumerate(selected_depts):
         dept_data = df[df["service"] == dept].sort_values("week")
         
+        # Satisfaction trace with hover effect
         fig.add_trace(go.Scatter(
             x=dept_data["week"],
             y=dept_data["patient_satisfaction"],
             name=DEPT_LABELS[dept],
             line=dict(color=DEPT_COLORS[dept], width=line_width),
             mode="lines+markers",
-            marker=dict(size=marker_size, color=DEPT_COLORS[dept]),
+            marker=dict(
+                size=base_marker_size, 
+                color=DEPT_COLORS[dept],
+                line=dict(width=0)  # No border by default
+            ),
+            # Hover styling - marker gets bigger and white border
+            hoverlabel=dict(
+                bgcolor=DEPT_COLORS[dept],
+                font_size=11,
+                font_color="white"
+            ),
             hoverinfo="none",
-            legendgroup=dept
+            legendgroup=dept,
+            customdata=[[dept, dept_idx]] * len(dept_data),
+            meta={"dept": dept, "dept_idx": dept_idx}
         ), row=1, col=1)
         
+        # Acceptance trace with hover effect
         fig.add_trace(go.Scatter(
             x=dept_data["week"],
             y=dept_data["acceptance_rate"],
             name=DEPT_LABELS[dept],
             line=dict(color=DEPT_COLORS[dept], width=line_width),
             mode="lines+markers",
-            marker=dict(size=marker_size, color=DEPT_COLORS[dept]),
+            marker=dict(
+                size=base_marker_size, 
+                color=DEPT_COLORS[dept],
+                line=dict(width=0)
+            ),
             hoverinfo="none",
             legendgroup=dept,
-            showlegend=False
+            showlegend=False,
+            customdata=[[dept, dept_idx]] * len(dept_data),
+            meta={"dept": dept, "dept_idx": dept_idx}
         ), row=2, col=1)
     
-    # Threshold lines with VALUE labels on RIGHT side
-    if zoom_level == "detail":
-        # Satisfaction thresholds
-        fig.add_hline(y=75, line_dash="dash", line_color="#888",
-                      line_width=1, opacity=0.4, row=1, col=1,
-                      annotation_text="75", annotation_position="right",
-                      annotation=dict(font_size=8, font_color="#888"))
-        fig.add_hline(y=60, line_dash="dash", line_color="#888",
-                      line_width=1, opacity=0.4, row=1, col=1,
-                      annotation_text="60", annotation_position="right",
-                      annotation=dict(font_size=8, font_color="#888"))
-        
-        # Acceptance thresholds
-        fig.add_hline(y=75, line_dash="dash", line_color="#888",
-                      line_width=1, opacity=0.4, row=2, col=1,
-                      annotation_text="75", annotation_position="right",
-                      annotation=dict(font_size=8, font_color="#888"))
-        fig.add_hline(y=50, line_dash="dash", line_color="#888",
-                      line_width=1, opacity=0.4, row=2, col=1,
-                      annotation_text="50", annotation_position="right",
-                      annotation=dict(font_size=8, font_color="#888"))
+    # SMART THRESHOLD LOGIC based on selection count
+    # Justification: Balance detail vs clutter (Tufte's data-ink ratio)
+    # - 1 dept: Show μ ± 2σ bands (global baseline for SPC-style monitoring)
+    # - 2 depts: Show 2 mean lines (dept-colored, enable comparison)
+    # - 3-4 depts: No thresholds (avoid visual clutter)
+    num_selected = len(selected_depts)
     
-    # Collect events for the event strip between plots
+    if num_selected == 1:
+        # Single department: Show full statistical control limits (±2σ for 95% CI)
+        dept = selected_depts[0]
+        for row, metric in [(1, "patient_satisfaction"), (2, "acceptance_rate")]:
+            # Global stats: ALL 52 weeks for this department
+            metric_data = df[df["service"] == dept][metric]
+            mean_val = metric_data.mean()
+            std_val = metric_data.std()
+            
+            # Mean line (department color)
+            fig.add_hline(
+                y=mean_val, 
+                line_dash="solid", 
+                line_color=DEPT_COLORS[dept],
+                line_width=1.8, 
+                opacity=0.7, 
+                row=row, col=1,
+                annotation_text=f"μ={mean_val:.0f}", 
+                annotation_position="right",  # Back to right side
+                annotation=dict(font_size=8, font_color=DEPT_COLORS[dept], xshift=10)
+            )
+            
+            # Upper bound (μ + 2σ) - 95% CI upper limit
+            upper = min(100, mean_val + 2 * std_val)
+            fig.add_hline(
+                y=upper, 
+                line_dash="dash",  # Same as lower (both are limits)
+                line_color=SEMANTIC_COLORS["threshold_upper"],
+                line_width=1.2, 
+                opacity=0.5, 
+                row=row, col=1,
+                annotation_text=f"+2σ={upper:.0f}",  # Actual value
+                annotation_position="right",  # Back to right side
+                annotation=dict(font_size=7, font_color=SEMANTIC_COLORS["threshold_upper"], xshift=10)
+            )
+            
+            # Lower bound (μ - 2σ) - 95% CI lower limit
+            lower = max(0, mean_val - 2 * std_val)
+            fig.add_hline(
+                y=lower, 
+                line_dash="dash",  # Same as upper (both are limits)
+                line_color=SEMANTIC_COLORS["threshold_lower"],
+                line_width=1.2, 
+                opacity=0.5, 
+                row=row, col=1,
+                annotation_text=f"-2σ={lower:.0f}",  # Actual value
+                annotation_position="right",  # Back to right side
+                annotation=dict(font_size=7, font_color=SEMANTIC_COLORS["threshold_lower"], xshift=10)
+            )
+    
+    elif num_selected == 2:
+        # Two departments: Show mean lines only (colored by department)
+        # Color already indicates department, so just show "μ=value"
+        for row, metric in [(1, "patient_satisfaction"), (2, "acceptance_rate")]:
+            for dept in selected_depts:
+                # Global mean: ALL 52 weeks for each department
+                metric_data = df[df["service"] == dept][metric]
+                mean_val = metric_data.mean()
+                
+                fig.add_hline(
+                    y=mean_val, 
+                    line_dash="solid", 
+                    line_color=DEPT_COLORS[dept],
+                    line_width=1.5, 
+                    opacity=0.6, 
+                    row=row, col=1,
+                    annotation_text=f"μ={mean_val:.0f}",  # No dept name - color indicates it
+                    annotation_position="right",
+                    annotation=dict(font_size=8, font_color=DEPT_COLORS[dept])
+                )
+    
+    # else: 3-4 departments → No threshold lines (avoid clutter)
+    
+    # Collect and display events with department-colored borders
+    # NOTE: Create events for ALL weeks (not just visible range) so they appear when panning
     events_by_week = {}
-    if zoom_level in ["quarter", "detail"]:
+    week_event_groups = {}  # Initialize empty dict
+    
+    if show_events:  # Only create event markers if toggle is ON
         events_in_range = df[
-            (df["week"] >= week_min) & 
-            (df["week"] <= week_max) & 
-            (df["event"] != "none") &
+            (df["event"] != "none") &  # No week filter - show all events
             (df["service"].isin(selected_depts))
         ]
         
+        # Group all events by week and department to prevent overlap
         for week in events_in_range["week"].unique():
             week_events = events_in_range[events_in_range["week"] == week]
-            unique_events = list(week_events["event"].unique())
-            events_by_week[week] = unique_events
-            
+            events_by_dept = {}
+            for _, row in week_events.iterrows():
+                dept = row["service"]
+                evt = row["event"]
+                if dept not in events_by_dept:
+                    events_by_dept[dept] = []
+                if evt not in events_by_dept[dept]:
+                    events_by_dept[dept].append(evt)
+            week_event_groups[week] = events_by_dept
+            events_by_week[week] = events_by_dept
+        
+        # Add event markers - stack vertically, centered on each week's line
+        for week, events_by_dept in week_event_groups.items():
             # Add subtle vertical line through both plots
             fig.add_vline(
                 x=week, line_dash="dot",
-                line_color="#95a5a6",
+                line_color="#dddddd",
                 line_width=1, opacity=0.3
             )
             
-            # Add event emojis in the gap between plots - stacked vertically
-            for i, evt in enumerate(unique_events):
-                # Stack events vertically: first at 0.52, second at 0.48, etc.
-                y_pos = 0.52 - (i * 0.04)
+            # Flatten all events for this week
+            all_events = []
+            for dept, dept_events in events_by_dept.items():
+                for evt in dept_events:
+                    all_events.append((dept, evt))
+            
+            # Stack events vertically, centered
+            num_events = len(all_events)
+            y_center = 0.50
+            y_spacing = 0.05
+            y_start = y_center + ((num_events - 1) * y_spacing / 2)
+            
+            for idx, (dept, evt) in enumerate(all_events):
+                y_pos = y_start - (idx * y_spacing)
+                
                 fig.add_annotation(
                     x=week,
                     y=y_pos,
@@ -132,14 +250,20 @@ def create_overview_charts(df, selected_depts, week_range):
                     yref="paper",
                     text=EVENT_ICONS.get(evt, "⚡"),
                     showarrow=False,
-                    font=dict(size=12),
-                    bgcolor="rgba(255,255,255,0.7)"
+                    font=dict(size=11),  # Keep your adjusted size
+                    bgcolor="white",
+                    bordercolor=DEPT_COLORS[dept],
+                    borderwidth=1,  # Keep your adjusted thickness
+                    borderpad=0,
+                    opacity=1.0,
+                    align="center",
+                    valign="middle",
                 )
     
     fig.update_layout(
-        height=400,
-        margin=dict(l=40, r=25, t=15, b=35),
-        hovermode="x",
+        height=420,  # Increased to accommodate larger event marker gap
+        margin=dict(l=40, r=60, t=15, b=45),
+        hovermode="closest",
         showlegend=False,
         plot_bgcolor="white",
         paper_bgcolor="white",
@@ -171,35 +295,70 @@ def create_overview_charts(df, selected_depts, week_range):
     return fig, events_by_week
 
 
-def create_histogram(df, selected_depts, metric, highlight_value=None):
-    """
-    Create KDE (Kernel Density Estimate) showing GLOBAL distribution.
+def _hex_to_rgba(hex_color, alpha=0.5):
+    """Convert hex color (short or full) to rgba string.
     
-    Smooth continuous PDF instead of discrete histogram bins.
+    Args:
+        hex_color: '#ccc' or '#cccccc' format
+        alpha: Opacity value 0-1
+    
+    Returns:
+        String like 'rgba(204,204,204,0.5)'
     """
-    if selected_depts:
+    hex_color = hex_color.lstrip('#')
+    
+    # Expand shorthand (e.g., 'ccc' -> 'cccccc')
+    if len(hex_color) == 3:
+        hex_color = ''.join([c*2 for c in hex_color])
+    
+    r = int(hex_color[0:2], 16)
+    g = int(hex_color[2:4], 16)
+    b = int(hex_color[4:6], 16)
+    
+    return f'rgba({r},{g},{b},{alpha})'
+
+
+def create_histogram(df, selected_depts, metric, highlight_value=None, hovered_dept=None):
+    """
+    Create KDE (Kernel Density Estimate) for hovered department.
+    
+    Args:
+        hovered_dept: If provided, show KDE for this specific department only
+                     (details-on-demand interaction pattern)
+    """
+    # Use hovered department if provided, otherwise merge all selected
+    if hovered_dept:
+        filtered = df[df["service"] == hovered_dept]
+    elif selected_depts:
         filtered = df[df["service"].isin(selected_depts)]
     else:
         filtered = df
     
     values = filtered[metric].values
     
-    # Create smooth KDE curve
+    # Create smooth KDE curve (extended range for tails)
     from scipy import stats
     kde = stats.gaussian_kde(values)
-    x_range = np.linspace(0, 100, 200)  # 200 points for smooth curve
+    x_range = np.linspace(-10, 115, 250)  # Extended for tails
     y_density = kde(x_range)
     
     fig = go.Figure()
     
-    # Fill area under curve
+    # Fill area under curve (use department color if hovered)
+    fill_color = '#ccc'
+    line_color = '#ccc'
+    if hovered_dept:
+        dept_hex = DEPT_COLORS.get(hovered_dept, '#ccc')
+        fill_color = dept_hex
+        line_color = dept_hex
+    
     fig.add_trace(go.Scatter(
         x=x_range,
         y=y_density,
         mode='lines',
         fill='tozeroy',
-        line=dict(color='#ccc', width=1),
-        fillcolor='rgba(200,200,200,0.5)',
+        line=dict(color=line_color, width=1.5),
+        fillcolor=_hex_to_rgba(fill_color, 0.5),
         hoverinfo='skip'
     ))
     
@@ -219,7 +378,12 @@ def create_histogram(df, selected_depts, metric, highlight_value=None):
             hoverinfo='skip'
         ))
     
-    title_text = "Satisfaction" if "satisfaction" in metric else "Acceptance"
+    # Title shows metric + department (if hovered)
+    base_title = "Satisfaction" if "satisfaction" in metric else "Acceptance"
+    if hovered_dept:
+        title_text = f"{base_title} - {DEPT_LABELS_SHORT.get(hovered_dept, hovered_dept)}"
+    else:
+        title_text = base_title
     
     fig.update_layout(
         height=175,
@@ -227,7 +391,7 @@ def create_histogram(df, selected_depts, metric, highlight_value=None):
         plot_bgcolor="white",
         paper_bgcolor="rgba(0,0,0,0)",
         title=dict(text=title_text, font=dict(size=9, color="#666"), x=0.5, y=0.95),
-        xaxis=dict(range=[0, 100], tickvals=[0, 25, 50, 75, 100], tickfont=dict(size=7), showgrid=False),
+        xaxis=dict(range=[-10, 115], tickvals=[0, 25, 50, 75, 100], tickfont=dict(size=7), showgrid=False),
         yaxis=dict(showticklabels=False, showgrid=False),
         showlegend=False
     )
@@ -281,10 +445,40 @@ def create_event_strip(events_by_week, week_range):
     )
 
 
-def create_overview_expanded(df, selected_depts, week_range):
-    """Create the expanded overview widget layout with event strip between plots."""
+def create_overview_expanded(df, selected_depts, week_range, show_events=True, hide_anomalies=False):
+    """Create the expanded overview widget layout with event strip between plots.
+    
+    Args:
+        show_events: If True, display event markers
+        hide_anomalies: If True, filter out anomaly weeks
+    """
     info = WIDGET_INFO["overview"]
     zoom_level = get_zoom_level(week_range)
+    
+    # Create color legend for selected departments
+    legend_items = []
+    for dept in selected_depts:
+        legend_items.append(
+            html.Span(
+                style={"display": "inline-flex", "alignItems": "center", "marginRight": "12px"},
+                children=[
+                    html.Span(
+                        style={
+                            "width": "12px",
+                            "height": "12px",
+                            "backgroundColor": DEPT_COLORS[dept],
+                            "borderRadius": "2px",
+                            "marginRight": "4px",
+                            "display": "inline-block"
+                        }
+                    ),
+                    html.Span(
+                        DEPT_LABELS_SHORT[dept],
+                        style={"fontSize": "10px", "color": "#555"}
+                    )
+                ]
+            )
+        )
     
     header = html.Div(
         style={
@@ -294,11 +488,24 @@ def create_overview_expanded(df, selected_depts, week_range):
             "flexShrink": "0"
         },
         children=[
-            html.H4(
-                f"{info['icon']} {info['title']}",
-                style={"margin": "0", "color": "#2c3e50", "fontWeight": "500", "fontSize": "16px"}
-            ),
-            html.Span(info["subtitle"], style={"fontSize": "11px", "color": "#999"})
+            html.Div(
+                style={"display": "flex", "justifyContent": "space-between", "alignItems": "center"},
+                children=[
+                    html.Div(
+                        children=[
+                            html.H4(
+                                f"{info['icon']} {info['title']}",
+                                style={"margin": "0", "color": "#2c3e50", "fontWeight": "500", "fontSize": "16px"}
+                            ),
+                            html.Span(info["subtitle"], style={"fontSize": "11px", "color": "#999"})
+                        ]
+                    ),
+                    html.Div(
+                        style={"display": "flex", "alignItems": "center"},
+                        children=legend_items
+                    ) if legend_items else None
+                ]
+            )
         ]
     )
     
@@ -313,7 +520,9 @@ def create_overview_expanded(df, selected_depts, week_range):
         )
     else:
         # Get chart and events
-        chart_fig, events_by_week = create_overview_charts(df, selected_depts, week_range)
+        chart_fig, events_by_week = create_overview_charts(
+            df, selected_depts, week_range, show_events, hide_anomalies
+        )
         
         # Main line charts
         chart_section = html.Div(
@@ -390,13 +599,13 @@ def create_overview_expanded(df, selected_depts, week_range):
             tooltip_section = html.Div(
                 id="side-tooltip",
                 style={
-                    "width": "100px",
+                    "width": "95px",  # Slightly wider now that annotations are moved
                     "backgroundColor": "#f8f9fa",
                     "borderRadius": "6px",
-                    "padding": "8px",
+                    "padding": "7px",
                     "border": "1px solid #e0e0e0",
                     "flexShrink": "0",
-                    "fontSize": "10px",
+                    "fontSize": "9px",
                     "overflow": "hidden"
                 },
                 children=[
@@ -419,13 +628,13 @@ def create_overview_expanded(df, selected_depts, week_range):
             tooltip_section = html.Div(
                 id="side-tooltip",
                 style={
-                    "width": "120px",
+                    "width": "95px",
                     "backgroundColor": "#f8f9fa",
                     "borderRadius": "6px",
-                    "padding": "8px",
+                    "padding": "7px",
                     "border": "1px solid #e0e0e0",
                     "flexShrink": "0",
-                    "fontSize": "10px"
+                    "fontSize": "9px"
                 },
                 children=[
                     html.Div(
@@ -551,20 +760,21 @@ def build_tooltip_content(week, week_data, selected_depts, df, week_range):
         for evt_info in events_this_week:
             evt = evt_info["event"]
             dept = evt_info["dept"]
-            evt_color = EVENT_COLORS.get(evt, "#95a5a6")
-            dept_color = DEPT_COLORS.get(dept, "#999")
+            dept_color = DEPT_COLORS.get(dept, "#999")  # Use DEPT color, not EVENT color
+            
             tooltip_children.append(
                 html.Div(
                     style={
                         "display": "flex", "alignItems": "center", "gap": "3px",
                         "marginBottom": "4px", "padding": "2px 4px",
-                        "backgroundColor": evt_color + "20",
-                        "borderRadius": "3px", "borderLeft": f"3px solid {dept_color}"
+                        "backgroundColor": _hex_to_rgba(dept_color, 0.15),  # Dept color background
+                        "borderRadius": "3px", 
+                        "borderLeft": f"3px solid {dept_color}"  # Dept color border
                     },
                     children=[
                         html.Span(EVENT_ICONS.get(evt, "⚡"), style={"fontSize": "10px"}),
                         html.Span(evt.capitalize(), style={
-                            "fontSize": "9px", "color": evt_color, "fontWeight": "500"
+                            "fontSize": "9px", "color": "#555", "fontWeight": "500"
                         })
                     ]
                 )

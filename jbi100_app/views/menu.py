@@ -191,6 +191,34 @@ def create_sidebar():
                             html.Button("H2", id="h2-btn", n_clicks=0,
                                 style={"padding": "5px", "backgroundColor": "#ecf0f1", "color": "#2c3e50", "border": "1px solid #bdc3c7", "borderRadius": "4px", "cursor": "pointer", "fontSize": "10px"}),
                         ]
+                    ),
+                    
+                    html.Hr(style={"borderColor": "#e0e0e0", "margin": "15px 0"}),
+                    
+                    # Display options
+                    html.Label(
+                        "Display Options",
+                        style={"color": "#2c3e50", "fontWeight": "600", "marginBottom": "10px", "display": "block", "fontSize": "13px"}
+                    ),
+                    
+                    # Show event markers toggle
+                    dcc.Checklist(
+                        id="show-events-toggle",
+                        options=[{"label": " Show event markers", "value": "show"}],
+                        value=["show"],  # Default: checked (events visible)
+                        style={"color": "#34495e", "fontSize": "12px"},
+                        inputStyle={"marginRight": "8px"},
+                        labelStyle={"display": "block", "marginBottom": "8px", "cursor": "pointer"}
+                    ),
+                    
+                    # Hide anomaly weeks toggle
+                    dcc.Checklist(
+                        id="hide-anomalies-toggle",
+                        options=[{"label": " Hide anomaly weeks", "value": "hide"}],
+                        value=[],  # Default: unchecked (show all data)
+                        style={"color": "#34495e", "fontSize": "12px"},
+                        inputStyle={"marginRight": "8px"},
+                        labelStyle={"display": "block", "marginBottom": "8px", "cursor": "pointer"}
                     )
                 ]
             )

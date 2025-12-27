@@ -10,12 +10,13 @@ JBI100 Visualization - Group 25
 SERVICES = ["emergency", "surgery", "general_medicine", "ICU"]
 
 # Color palette for departments (consistent across all views)
-# Justification: Categorical color scheme with high distinguishability
+# Justification: Colorblind-safe categorical palette (Okabe-Ito + Wong)
+# Avoids red-green confusion (Munzner Ch. 10, theory line 287)
 DEPT_COLORS = {
-    "emergency": "#e74c3c",        # Red - urgency association
-    "surgery": "#3498db",          # Blue - clinical/sterile
-    "general_medicine": "#2ecc71", # Green - general health
-    "ICU": "#9b59b6"               # Purple - intensive/critical
+    "emergency": "#E69F00",        # Orange - urgency, high visibility
+    "surgery": "#0072B2",          # Blue - clinical/sterile
+    "general_medicine": "#009E73", # Teal - health/wellness
+    "ICU": "#CC79A7"               # Rose - intensive/critical
 }
 
 DEPT_LABELS = {
@@ -37,11 +38,12 @@ DEPT_LABELS_SHORT = {
 # EVENT CONFIGURATION
 # =============================================================================
 
+# Colorblind-safe event colors (distinct from dept colors)
 EVENT_COLORS = {
-    "flu": "#e74c3c",
-    "donation": "#2ecc71", 
-    "holiday": "#9b59b6",
-    "training": "#f39c12"
+    "flu": "#D55E00",      # Vermillion - alert
+    "donation": "#009E73", # Teal - positive
+    "holiday": "#CC79A7",  # Rose - special occasion
+    "training": "#F0E442"  # Yellow - learning
 }
 
 EVENT_ICONS = {
@@ -55,12 +57,18 @@ EVENT_ICONS = {
 # SEMANTIC COLORS
 # =============================================================================
 
+# Colorblind-safe semantic colors
+# Using luminance + shape redundancy (not just hue)
 SEMANTIC_COLORS = {
-    "good": "#27ae60",
-    "warning": "#f39c12",
-    "bad": "#e74c3c",
-    "neutral": "#95a5a6",
-    "primary": "#3498db"
+    "good": "#009E73",     # Teal (not pure green)
+    "warning": "#F0E442",  # Yellow
+    "bad": "#D55E00",      # Vermillion (not pure red)
+    "neutral": "#999999",  # Gray
+    "primary": "#0072B2",  # Blue
+    # Threshold-specific (luminance-based hierarchy)
+    "threshold_mean": "#56B4E9",    # Sky blue - central tendency
+    "threshold_upper": "#000000",   # Black - limit (dark = constraint)
+    "threshold_lower": "#000000"    # Black - limit (redundant with dash)
 }
 
 # =============================================================================
