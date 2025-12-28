@@ -207,7 +207,7 @@ def register_overview_callbacks():
     def update_histograms(hoverData, weekData, selectedDepts, weekRange):
         """Update KDE to show hovered department's distribution (details-on-demand)."""
         zoom_level = get_zoom_level(weekRange)
-        if zoom_level != "detail":
+        if zoom_level not in ["detail", "quarter"]:
             raise PreventUpdate
         
         # Detect which department is being hovered from customdata

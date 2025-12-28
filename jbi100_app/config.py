@@ -98,9 +98,9 @@ WIDGET_INFO = {
 # =============================================================================
 
 ZOOM_THRESHOLDS = {
-    "detail": 8,    # ≤8 weeks: Show histograms + thresholds
-    "quarter": 16   # ≤16 weeks: Show events + larger markers
-    # >16 weeks: Overview mode
+    "detail": 8,    # ≤8 weeks: Individual data points visible
+    "quarter": 13   # ≤13 weeks: True quarter (52/4), shows distributions
+    # >13 weeks: Overview mode
 }
 
 # =============================================================================

@@ -39,17 +39,22 @@ def create_overview_charts(df, selected_depts, week_range, show_events=True, hid
     
     Args:
         show_events: If True, display event markers (default: True)
-        hide_anomalies: If True, filter out weeks with data anomalies (default: False)
+        hide_anomalies: If True, filter out weeks with no staff assigned (default: False)
     """
     week_min, week_max = week_range
     zoom_level = get_zoom_level(week_range)
     
     # Filter out anomaly weeks if requested
-    # Anomaly = weeks with no staff assigned (data quality issue)
+    # Anomaly = weeks where NO staff members were assigned (present=0 for all staff)
     if hide_anomalies:
-        # Identify weeks where ALL departments have zero staff
-        # (You may need to adjust this logic based on your staff_schedule data)
-        df = df[df["patients_admitted"] > 0].copy()  # Filter out weeks with no admissions
+        from jbi100_app.data import load_staff_schedule
+        staff_df = load_staff_schedule()
+        
+        # Find weeks with at least 1 staff member present
+        weeks_with_staff = staff_df[staff_df["present"] == 1]["week"].unique()
+        
+        # Filter to only those weeks (removes 17 anomaly weeks: 3,6,9,12,15,18,21,24,27,30,33,36,39,42,45,48,51)
+        df = df[df["week"].isin(weeks_with_staff)].copy()
     
     # Create subplots with more vertical spacing for events
     fig = make_subplots(
@@ -557,8 +562,8 @@ def create_overview_expanded(df, selected_depts, week_range, show_events=True, h
             ]
         )
         
-        if zoom_level == "detail":
-            # Detail view: Add KDE panels (wider)
+        if zoom_level in ["detail", "quarter"]:
+            # Detail/Quarter view: Add KDE panels (show distributions at ≤13 weeks)
             kde_section = html.Div(
                 style={
                     "width": "220px",
