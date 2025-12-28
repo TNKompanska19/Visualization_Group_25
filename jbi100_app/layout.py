@@ -47,7 +47,9 @@ def create_layout():
             dcc.Store(id="week-data-store", data=week_data_store),
             dcc.Store(id="current-week-range", data=[1, 52]),
             dcc.Store(id="expanded-widget", data="overview"),
-            
+            dcc.Store(id="quantity-selected-week", data=None),
+            dcc.Store(id="quantity-selected-service", data=None),
+
             # =========================================================
             # SIDEBAR (from views/menu.py)
             # =========================================================
