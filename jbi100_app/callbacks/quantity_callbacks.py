@@ -235,7 +235,8 @@ def update_t2_weekly(depts, week_range, hide_anom_list, show_events_list, weekly
             xanchor="left",
             font=dict(size=20),
         ),
-        height=480,
+        # Keep visuals consistent and avoid internal scroll pressure
+        height=440,
         margin=dict(l=105, r=20, t=115, b=60),
         plot_bgcolor="white",
         paper_bgcolor="white",
@@ -274,9 +275,10 @@ def update_t2_weekly(depts, week_range, hide_anom_list, show_events_list, weekly
             row=2, col=1
         )
 
-    # --- UPGRADE #1: show cap threshold line (only when separate view, count metric, robust_used) ---
-    # We draw it on the refused subplot to avoid misleading scaling when beds share a y-axis.
+    # --- Cap threshold line + CLEANER label ---
     if weekly_layout != "grouped" and refusal_metric == "count" and robust_used and q95 is not None and q95 > 0:
+        cap_val = int(round(q95))
+
         fig.add_hline(
             y=q95,
             line_width=1,
@@ -284,19 +286,20 @@ def update_t2_weekly(depts, week_range, hide_anom_list, show_events_list, weekly
             line_color="rgba(149,165,166,0.95)",
             row=2, col=1
         )
-        # Cleaner label: smaller, italic, slightly above line, with subtle white bg
+
+        # Cleaner label: shorter, aligned top-right, with subtle bg
         fig.add_annotation(
-            x=0.985,
+            x=0.99,
             y=q95,
             xref="paper",
             yref="y2",
-            text=f"cap (q95) ≈ {int(round(q95))}",
+            text=f"Cap @95% ≈ {cap_val}",
             showarrow=False,
             xanchor="right",
             yanchor="bottom",
-            yshift=6,
-            font=dict(size=9, color="rgba(149,165,166,0.95)", style="italic"),
-            bgcolor="rgba(255,255,255,0.75)",
+            yshift=8,
+            font=dict(size=9, color="rgba(120,130,140,0.95)"),
+            bgcolor="rgba(255,255,255,0.85)",
             bordercolor="rgba(0,0,0,0)",
             borderpad=2,
         )
@@ -352,7 +355,7 @@ def update_t2_weekly(depts, week_range, hide_anom_list, show_events_list, weekly
         Input("dept-filter", "value"),
         Input("week-slider", "value"),
         Input("t2-refusal-metric", "value"),
-        Input("quantity-selected-week", "data"),  # --- UPGRADE #2: context in title ---
+        Input("quantity-selected-week", "data"),
     ],
 )
 def update_t2_detail(depts, week_range, refusal_metric, selected_week):
@@ -401,7 +404,6 @@ def update_t2_detail(depts, week_range, refusal_metric, selected_week):
         hovertemplate=refused_name + ": %{y:.1f}<extra></extra>" if refusal_metric == "rate" else refused_name + ": %{y}<extra></extra>",
     ))
 
-    # --- UPGRADE #2: selection context in title ---
     base_title = " / ".join([DEPT_LABELS.get(d, d) for d in depts]) + " Summary"
     if selected_week is not None:
         try:
@@ -413,13 +415,12 @@ def update_t2_detail(depts, week_range, refusal_metric, selected_week):
         context = f"(Weeks {week_min}–{week_max})"
     title_text = f"{base_title} {context}"
 
-    # Headroom for outside text labels
     max_y = max([beds_avg, demand_avg, refused_show, 1.0])
     fig.update_yaxes(range=[0, max_y * 1.18], rangemode="tozero", automargin=True)
 
     fig.update_layout(
         title=dict(text=title_text, x=0.02, xanchor="left", font=dict(size=18)),
-        height=480,
+        height=440,
         margin=dict(l=55, r=20, t=75, b=95),
         plot_bgcolor="white",
         paper_bgcolor="white",
@@ -548,7 +549,7 @@ def update_t3_stacked(depts, week_range, bucket_mode):
 
     df["bucket"] = pd.cut(df["length_of_stay"], bins=bins, labels=labels)
 
-    # ✅ FIX: silence pandas FutureWarning (categorical groupby default change)
+    # silence pandas FutureWarning (categorical groupby default change)
     grouped = (
         df.groupby(["arrival_week", "bucket"], observed=True)
         .size()
