@@ -1,530 +1,579 @@
 """
-Quantity Callbacks - ACTUALLY USEFUL T2 CHARTS
+Quantity Callbacks
 JBI100 Visualization - Group 25
 
-T2: 
-Chart 1: Week-by-week bars showing demand, beds, refusals
-Chart 2: Department comparison scatter (only works with multiple depts)
-
-T3: Heatmap + stacked area (working well)
+T2 improvements (lecture/assignment aligned):
+- Select + Connect: click week to persist selection and highlight across T2/T3/Overview
+- Reconfigure: grouped vs separate view
+- Encode: refused count vs refusal rate
+- Compare: if multiple departments selected, show per-dept comparison (overlay)
+- Reduce clutter: event icons only in DETAIL zoom (<= 8 weeks)
+- Robust scaling: refusal spikes no longer flatten the entire plot (visual cap at 95th percentile)
 """
 
-from dash import callback, Output, Input, State, no_update
-from dash.exceptions import PreventUpdate
-import numpy as np
-import pandas as pd
+from dash import callback, Output, Input, State, ctx
 import plotly.graph_objects as go
-from scipy import stats
-import math
+from plotly.subplots import make_subplots
+import pandas as pd
 
-from jbi100_app.config import DEPT_COLORS, DEPT_LABELS
 from jbi100_app.data import get_services_data, get_patients_data
-
-_services = get_services_data()
-_patients = get_patients_data()
+from jbi100_app.config import DEPT_COLORS, DEPT_LABELS, EVENT_ICONS
 
 
-# ==================================================================
-# HELPERS
-# ==================================================================
-
-def _filter_services(selected_depts, week_range):
-    w0, w1 = int(week_range[0]), int(week_range[1])
-    df = _services[(_services["week"] >= w0) & (_services["week"] <= w1)].copy()
-    if selected_depts:
-        df = df[df["service"].isin(selected_depts)]
-    return df
+def register_quantity_callbacks():
+    # kept for framework consistency
+    pass
 
 
-def _filter_patients(selected_depts, week_range):
-    w0, w1 = int(week_range[0]), int(week_range[1])
-    df = _patients.copy()
-    if selected_depts:
-        df = df[df["service"].isin(selected_depts)]
-    if "arrival_week" in df.columns:
-        df = df[(df["arrival_week"] >= w0) & (df["arrival_week"] <= w1)]
-    return df
+def _anomaly_weeks():
+    return list(range(3, 53, 3))
 
 
-def _empty_fig(title="No data"):
-    fig = go.Figure()
-    fig.add_annotation(text=title, xref="paper", yref="paper", x=0.5, y=0.5, showarrow=False, font=dict(size=13, color="#999"))
-    fig.update_layout(template="plotly_white", margin=dict(l=40, r=40, t=40, b=40), xaxis=dict(visible=False), yaxis=dict(visible=False))
-    return fig
+def _zoom_level(week_range):
+    wmin, wmax = week_range
+    span = (wmax - wmin) + 1
+    if span <= 8:
+        return "detail"
+    if span <= 13:
+        return "quarter"
+    return "overview"
 
-
-# ==================================================================
-# T2 MODAL: BED DISTRIBUTION
-# ==================================================================
-
-@callback(
-    Output("distribution-modal", "style"),
-    [
-        Input("show-distribution-btn", "n_clicks"),
-        Input("close-distribution-btn", "n_clicks"),
-    ],
-    prevent_initial_call=True,
-)
-def toggle_distribution_modal(show_clicks, close_clicks):
-    """
-    Show/hide the bed distribution modal.
-    """
-    from dash import callback_context
-    
-    if not callback_context.triggered:
-        return {"display": "none"}
-    
-    button_id = callback_context.triggered[0]["prop_id"].split(".")[0]
-    
-    if button_id == "show-distribution-btn":
-        return {"display": "flex"}
-    else:
-        return {"display": "none"}
-
-
-@callback(
-    Output("distribution-chart", "figure"),
-    [
-        Input("week-slider", "value"),
-        Input("show-distribution-btn", "n_clicks"),
-    ],
-)
-def update_distribution_chart(week_range, n_clicks):
-    """
-    Q1: How are beds distributed across departments?
-    Simple horizontal bar chart showing bed allocation by department.
-    Always shows ALL departments regardless of filter.
-    """
-    # Get all services data (ignore dept-filter)
-    df = _filter_services(None, week_range)  # None = all departments
-    if df.empty:
-        return _empty_fig("No data")
-    
-    # Aggregate by department
-    agg = df.groupby("service").agg({
-        "available_beds": "mean",
-    }).reset_index().sort_values("available_beds", ascending=True)
-    
-    fig = go.Figure()
-    
-    # Colorblind-friendly colors for each department
-    colors = {
-        "emergency": "#0173B2",
-        "surgery": "#029E73",
-        "general_medicine": "#DE8F05",
-        "ICU": "#CC78BC",
-    }
-    
-    for _, row in agg.iterrows():
-        service = row["service"]
-        label = DEPT_LABELS.get(service, service)
-        color = colors.get(service, "#3498db")
-        beds = math.floor(row["available_beds"])
-        
-        fig.add_trace(go.Bar(
-            x=[beds],
-            y=[label],
-            orientation="h",
-            marker=dict(color=color, opacity=0.85),
-            text=[f"{beds}"],
-            textposition="inside",
-            textfont=dict(color="white", size=13, family="Arial Bold"),
-            hovertemplate=f"<b style='font-size:14px'>{label}</b><br><b>Avg Beds:</b> {beds}<extra></extra>",
-            showlegend=False,
-        ))
-    
-    fig.update_layout(
-        title=dict(
-            text=f"<b>Bed Distribution by Department</b><br><sub style='font-size:11px'>Week(s) {week_range[0]}-{week_range[1]} | Average beds allocated</sub>",
-            font=dict(size=14)
-        ),
-        xaxis=dict(title="<b>Average Beds per Week</b>", gridcolor="#f0f0f0"),
-        yaxis=dict(title=""),
-        template="plotly_white",
-        hoverlabel=dict(
-            bgcolor="white",
-            font_size=13,
-            font_family="Arial",
-        ),
-        margin=dict(l=120, r=40, t=70, b=60),
-    )
-    
-    return fig
-
-
-# ==================================================================
-# TAB VISIBILITY
-# ==================================================================
 
 @callback(
     [Output("quantity-t2-content", "style"), Output("quantity-t3-content", "style")],
     Input("quantity-tabs", "value"),
 )
-def toggle_tab_visibility(active_tab):
-    if active_tab == "tab-t2":
-        return {"display": "flex", "flexDirection": "column", "gap": "8px", "height": "100%"}, {"display": "none"}
-    else:
+def switch_quantity_tab(tab_value):
+    if tab_value == "tab-t3":
         return {"display": "none"}, {"display": "flex", "flexDirection": "column", "gap": "6px", "height": "100%"}
+    return {"display": "flex", "flexDirection": "column", "gap": "8px", "height": "100%"}, {"display": "none"}
 
 
-# ==================================================================
-# T2 CHART 1: WEEKLY DEMAND, BEDS, REFUSALS
-# ==================================================================
+@callback(
+    Output("quantity-selected-week", "data"),
+    [Input("t2-spc-chart", "clickData"), Input("t2-clear-selection-btn", "n_clicks")],
+    State("quantity-selected-week", "data"),
+    prevent_initial_call=True,
+)
+def store_selected_week(clickData, clear_clicks, current):
+    if ctx.triggered_id == "t2-clear-selection-btn":
+        return None
+    if clickData and "points" in clickData and len(clickData["points"]) > 0:
+        x = clickData["points"][0].get("x", None)
+        if x is None:
+            return current
+        try:
+            return int(round(float(x)))
+        except Exception:
+            return current
+    return current
+
 
 @callback(
     Output("t2-spc-chart", "figure"),
     [
         Input("dept-filter", "value"),
         Input("week-slider", "value"),
-        Input("quantity-tabs", "value"),
         Input("hide-anomalies-toggle", "value"),
+        Input("show-events-toggle", "value"),
+        Input("t2-weekly-layout", "value"),
+        Input("t2-refusal-metric", "value"),
+        Input("quantity-selected-week", "data"),
     ],
 )
-def update_t2_weekly_bars(selected_depts, week_range, active_tab, hide_anomalies):
-    """
-    Week-by-week stacked/grouped bars showing:
-    - Beds (capacity baseline)
-    - Demand (what was requested)
-    - Refusals (what couldn't be accommodated)
-    """
-    if active_tab != "tab-t2":
-        raise PreventUpdate
-    
-    df = _filter_services(selected_depts, week_range)
-    if df.empty:
-        return _empty_fig("No data")
-    
-    # Filter out anomaly weeks if toggle is on
-    if hide_anomalies and "hide" in hide_anomalies:
-        # Mark anomaly weeks: every 3rd week (3, 6, 9, 12, ...)
-        anomaly_weeks = [w for w in range(3, 53, 3)]  # [3, 6, 9, ..., 51]
-        df = df[~df["week"].isin(anomaly_weeks)]
-        if df.empty:
-            return _empty_fig("No non-anomaly weeks in selected range")
-    
-    df = df.sort_values("week")
-    
-    fig = go.Figure()
-    
-    # For each department, add traces
-    for service in sorted(df["service"].unique()):
-        svc_data = df[df["service"] == service]
-        color = DEPT_COLORS.get(service, "#3498db")
-        label = DEPT_LABELS.get(service, service)
-        
-        # Colorblind-friendly colors
-        bed_color = "#0173B2"  # Blue
-        refused_color = "#DE8F05"  # Orange (not red - better for colorblind)
-        
-        # Beds (baseline)
-        fig.add_trace(go.Bar(
-            x=svc_data["week"],
-            y=svc_data["available_beds"],
-            name=f"{label} - Beds",
-            marker=dict(color=bed_color, opacity=0.7),
-            hovertemplate=(
-                f"<b style='font-size:14px'>{label}</b><br>" +
-                "<b>Week:</b> %{x}<br>" +
-                "<b>Beds:</b> %{y}<br>" +
-                "<extra></extra>"
-            ),
-            legendgroup=label,
-        ))
-        
-        # Refusals (orange for colorblind accessibility)
-        fig.add_trace(go.Bar(
-            x=svc_data["week"],
-            y=svc_data["patients_refused"],
-            name=f"{label} - Refused",
-            marker=dict(color=refused_color, opacity=0.85),
-            customdata=svc_data[["patients_request"]].values,
-            hovertemplate=(
-                f"<b style='font-size:14px'>{label}</b><br>" +
-                "<b>Week:</b> %{x}<br>" +
-                "<b>Refused:</b> %{y}<br>" +
-                "<b>Demand:</b> %{customdata[0]}<br>" +
-                "<extra></extra>"
-            ),
-            legendgroup=label,
-        ))
-    
+def update_t2_weekly(depts, week_range, hide_anom_list, show_events_list, weekly_layout, refusal_metric, selected_week):
+    services = get_services_data()
+    depts = depts or ["emergency"]
+    week_min, week_max = week_range
+    zoom = _zoom_level(week_range)
+
+    df = services[(services["week"] >= week_min) & (services["week"] <= week_max)].copy()
+    df = df[df["service"].isin(depts)].copy()
+
+    hide_anom = "hide" in (hide_anom_list or [])
+    show_events = "show" in (show_events_list or [])
+
+    anom = _anomaly_weeks()
+    if hide_anom:
+        df = df[~df["week"].isin(anom)].copy()
+
+    # Encode toggle
+    if refusal_metric == "rate":
+        df["refusal_value"] = df["refusal_rate"]  # already in %
+        refusal_label = "Refusal rate (%)"
+        hover_refusal = "Refusal rate: %{y:.1f}%"
+    else:
+        df["refusal_value"] = df["patients_refused"]
+        refusal_label = "Patients refused"
+        hover_refusal = "Refused: %{y}"
+
+    # Robust scaling (visual-only) for refused count
+    robust_used = False
+    q95 = None  # keep for cap-line
+    if refusal_metric == "count" and len(df) > 0:
+        q95 = float(df["refusal_value"].quantile(0.95))
+        if q95 > 0:
+            df["refusal_value_robust"] = df["refusal_value"].clip(upper=q95)
+            robust_used = (df["refusal_value"].max() > q95 * 1.25)
+        else:
+            df["refusal_value_robust"] = df["refusal_value"]
+    else:
+        df["refusal_value_robust"] = df["refusal_value"]
+
+    multi_dept = len(depts) > 1
+
+    # Figure skeleton
+    if weekly_layout == "grouped":
+        fig = go.Figure()
+    else:
+        fig = make_subplots(
+            rows=2, cols=1,
+            shared_xaxes=True,
+            vertical_spacing=0.10
+        )
+
+    # Build traces
+    if multi_dept:
+        for dept in depts:
+            ddf = (
+                df[df["service"] == dept]
+                .groupby("week", as_index=False)
+                .agg(
+                    beds=("available_beds", "sum"),
+                    refused=("refusal_value_robust", "sum"),
+                    raw_refused=("refusal_value", "sum"),
+                    event=("event", lambda x: x[x != "none"].iloc[0] if (x != "none").any() else "none"),
+                )
+                .sort_values("week")
+            )
+            weeks = ddf["week"].tolist()
+
+            color = DEPT_COLORS.get(dept, "#666")
+            label = DEPT_LABELS.get(dept, dept)
+
+            if weekly_layout == "grouped":
+                fig.add_trace(go.Bar(
+                    x=weeks, y=ddf["beds"],
+                    name=f"{label} - Beds",
+                    marker=dict(color=color),
+                    opacity=0.55,
+                    hovertemplate=f"{label}<br>Week %{x}<br>Beds: %{y}<extra></extra>",
+                ))
+                fig.add_trace(go.Bar(
+                    x=weeks, y=ddf["refused"],
+                    name=f"{label} - {refusal_label}",
+                    marker=dict(color=color),
+                    opacity=0.9,
+                    hovertemplate=f"{label}<br>Week %{x}<br>{hover_refusal}<extra></extra>",
+                ))
+            else:
+                fig.add_trace(go.Bar(
+                    x=weeks, y=ddf["beds"],
+                    name=f"{label} - Beds",
+                    marker=dict(color=color),
+                    opacity=0.6,
+                    hovertemplate=f"{label}<br>Week %{x}<br>Beds: %{y}<extra></extra>",
+                ), row=1, col=1)
+
+                fig.add_trace(go.Bar(
+                    x=weeks, y=ddf["refused"],
+                    name=f"{label} - {refusal_label}",
+                    marker=dict(color=color),
+                    opacity=0.9,
+                    hovertemplate=f"{label}<br>Week %{x}<br>{hover_refusal}<extra></extra>",
+                ), row=2, col=1)
+    else:
+        ddf = (
+            df.groupby("week", as_index=False)
+            .agg(
+                beds=("available_beds", "sum"),
+                refused=("refusal_value_robust", "sum"),
+                raw_refused=("refusal_value", "sum"),
+                event=("event", lambda x: x[x != "none"].iloc[0] if (x != "none").any() else "none"),
+            )
+            .sort_values("week")
+        )
+        weeks = ddf["week"].tolist()
+
+        if weekly_layout == "grouped":
+            fig.add_trace(go.Bar(
+                x=weeks, y=ddf["beds"],
+                name="Beds (total)",
+                marker=dict(color="#3498db"),
+                hovertemplate="Week %{x}<br>Beds: %{y}<extra></extra>",
+            ))
+            fig.add_trace(go.Bar(
+                x=weeks, y=ddf["refused"],
+                name=refusal_label,
+                marker=dict(color="#e67e22"),
+                hovertemplate="Week %{x}<br>" + hover_refusal + "<extra></extra>",
+            ))
+        else:
+            fig.add_trace(go.Bar(
+                x=weeks, y=ddf["beds"],
+                name="Beds (total)",
+                marker=dict(color="#3498db"),
+                hovertemplate="Week %{x}<br>Beds: %{y}<extra></extra>",
+            ), row=1, col=1)
+
+            fig.add_trace(go.Bar(
+                x=weeks, y=ddf["refused"],
+                name=refusal_label,
+                marker=dict(color="#e67e22"),
+                hovertemplate="Week %{x}<br>" + hover_refusal + "<extra></extra>",
+            ), row=2, col=1)
+
+    # --- Title + subtle subtitle note (prevents overlap with legend) ---
+    subtitle = ""
+    if refusal_metric == "count" and robust_used:
+        subtitle = "<br><span style='font-size:11px;color:#95a5a6'><i>Note: refusal spikes visually capped for readability</i></span>"
+
     fig.update_layout(
         title=dict(
-            text="<b>Weekly Capacity and Refusals</b><br><sub style='font-size:11px'>Blue=Beds | Orange=Refused | Hover for details</sub>",
-            font=dict(size=13)
+            text="Weekly Capacity and Refusals" + subtitle,
+            x=0.02,
+            xanchor="left",
+            font=dict(size=20),
         ),
-        xaxis=dict(title="<b>Week</b>", gridcolor="#f0f0f0"),
-        yaxis=dict(title="<b>Patients / Beds</b>", gridcolor="#f0f0f0"),
-        template="plotly_white",
-        barmode="group",
-        hovermode="x unified",
-        hoverlabel=dict(
-            bgcolor="white",
-            font_size=13,
-            font_family="Arial",
-        ),
+        height=480,
+        margin=dict(l=105, r=20, t=115, b=60),
+        plot_bgcolor="white",
+        paper_bgcolor="white",
+        clickmode="event+select",
         legend=dict(
-            orientation="v",
+            orientation="h",
             yanchor="top",
-            y=0.98,
-            xanchor="right",
-            x=0.98,
-            font=dict(size=10),
-            bgcolor="rgba(255,255,255,0.9)",
-            bordercolor="#ddd",
-            borderwidth=1,
+            y=1.02,
+            xanchor="center",
+            x=0.5
         ),
-        margin=dict(l=55, r=15, t=50, b=50),
+        barmode="group" if weekly_layout == "grouped" else None,
     )
-    
+
+    # Adaptive tick density to avoid unreadable week labels
+    span = (week_max - week_min) + 1
+    dtick = 1
+    if span > 20:
+        dtick = 2
+    if span > 40:
+        dtick = 4
+    fig.update_xaxes(title_text="Week", dtick=dtick, tickangle=0)
+
+    # Axis titles
+    if weekly_layout != "grouped":
+        fig.update_yaxes(
+            title_text="Beds",
+            title_standoff=12,
+            automargin=True,
+            row=1, col=1
+        )
+        fig.update_yaxes(
+            title_text=("Refusal rate (%)" if refusal_metric == "rate" else "Patients refused"),
+            title_standoff=16,
+            automargin=True,
+            row=2, col=1
+        )
+
+    # --- UPGRADE #1: show cap threshold line (only when separate view, count metric, robust_used) ---
+    # We draw it on the refused subplot to avoid misleading scaling when beds share a y-axis.
+    if weekly_layout != "grouped" and refusal_metric == "count" and robust_used and q95 is not None and q95 > 0:
+        fig.add_hline(
+            y=q95,
+            line_width=1,
+            line_dash="dash",
+            line_color="rgba(149,165,166,0.95)",
+            row=2, col=1
+        )
+        # Cleaner label: smaller, italic, slightly above line, with subtle white bg
+        fig.add_annotation(
+            x=0.985,
+            y=q95,
+            xref="paper",
+            yref="y2",
+            text=f"cap (q95) ≈ {int(round(q95))}",
+            showarrow=False,
+            xanchor="right",
+            yanchor="bottom",
+            yshift=6,
+            font=dict(size=9, color="rgba(149,165,166,0.95)", style="italic"),
+            bgcolor="rgba(255,255,255,0.75)",
+            bordercolor="rgba(0,0,0,0)",
+            borderpad=2,
+        )
+
+    # Transparency: mark anomaly weeks when not hidden
+    if not hide_anom:
+        for w in anom:
+            if week_min <= w <= week_max:
+                fig.add_vrect(
+                    x0=w - 0.5, x1=w + 0.5,
+                    fillcolor="rgba(0,0,0,0.04)",
+                    line_width=0,
+                    layer="below",
+                )
+
+    # Connect: highlight selected week
+    if selected_week is not None:
+        try:
+            w = int(selected_week)
+            if week_min <= w <= week_max:
+                fig.add_vrect(
+                    x0=w - 0.5, x1=w + 0.5,
+                    fillcolor="rgba(52,152,219,0.18)",
+                    line_width=0,
+                    layer="above",
+                )
+        except Exception:
+            pass
+
+    # Semantic zoom for events -> ONLY at detail zoom (<= 8 weeks)
+    if show_events and zoom == "detail":
+        ev = df.groupby("week")["event"].agg(
+            lambda x: x[x != "none"].iloc[0] if (x != "none").any() else "none"
+        )
+        for w, e in ev.items():
+            if e != "none":
+                fig.add_annotation(
+                    x=w,
+                    y=1.10,
+                    xref="x",
+                    yref="paper",
+                    text=EVENT_ICONS.get(e, "⚡"),
+                    showarrow=False,
+                    font=dict(size=12, color="#7f8c8d")
+                )
+
     return fig
 
 
-# ==================================================================
-# T2 CHART 2: DEPARTMENT COMPARISON (Refusal efficiency)
-# ==================================================================
-
 @callback(
-    [Output("t2-detail-chart", "figure"), Output("quantity-context", "children")],
+    Output("t2-detail-chart", "figure"),
     [
         Input("dept-filter", "value"),
         Input("week-slider", "value"),
-        Input("quantity-tabs", "value"),
+        Input("t2-refusal-metric", "value"),
+        Input("quantity-selected-week", "data"),  # --- UPGRADE #2: context in title ---
     ],
 )
-def update_t2_comparison(selected_depts, week_range, active_tab):
-    """
-    Q2 & Q3: Department comparison
-    Scatter: X=beds, Y=refusal_rate, size=demand
-    Only useful with multiple departments!
-    """
-    if active_tab != "tab-t2":
-        raise PreventUpdate
-    
-    df = _filter_services(selected_depts, week_range)
-    if df.empty:
-        return _empty_fig("No data"), "No data"
-    
-    # Check if single week selected
-    week_span = week_range[1] - week_range[0] + 1
-    
-    # Aggregate by department
-    agg = df.groupby("service").agg({
-        "available_beds": "mean",
-        "patients_request": "sum",
-        "patients_refused": "sum",
-    }).reset_index()
-    
-    agg["refusal_rate"] = (agg["patients_refused"] / agg["patients_request"] * 100).fillna(0)
-    
-    # If single week, show weekly refused instead of total
-    if week_span == 1:
-        agg["display_refused"] = agg["patients_refused"]
-        refused_label = "Refused (this week)"
+def update_t2_detail(depts, week_range, refusal_metric, selected_week):
+    services = get_services_data()
+    depts = depts or ["emergency"]
+    week_min, week_max = week_range
+
+    df = services[(services["week"] >= week_min) & (services["week"] <= week_max)].copy()
+    df = df[df["service"].isin(depts)].copy()
+
+    beds_avg = float(df.groupby("week")["available_beds"].sum().mean()) if len(df) else 0.0
+    demand_avg = float(df.groupby("week")["patients_request"].sum().mean()) if len(df) else 0.0
+
+    if refusal_metric == "rate":
+        refused_show = float(df["refusal_rate"].mean()) if len(df) else 0.0
+        refused_name = "Refusal rate (avg %)"
+        refused_disp = round(refused_show, 1)
     else:
-        # Scale refused to per-week average for better visualization
-        agg["display_refused"] = agg["patients_refused"] / week_span
-        refused_label = f"Refused (avg/week over {week_span} weeks)"
-    
-    # Check if we have multiple departments
-    if len(agg) < 2:
-        # Show simple bar chart instead
-        fig = go.Figure()
-        
-        service = agg.iloc[0]["service"]
-        label = DEPT_LABELS.get(service, service)
-        
-        # Colorblind-friendly palette
-        colors = ["#0173B2", "#029E73", "#DE8F05"]  # Blue, Green, Orange
-        
-        # Calculate weekly average for beds too
-        avg_beds = agg.iloc[0]["available_beds"]  # This is already mean from groupby
-        avg_demand = agg.iloc[0]["patients_request"] / week_span
-        avg_refused = agg.iloc[0]["display_refused"]
-        
-        fig.add_trace(go.Bar(
-            x=["Beds (avg/week)", "Demand (avg/week)", refused_label],
-            y=[avg_beds, avg_demand, avg_refused],
-            marker=dict(color=colors, opacity=0.85),
-            text=[f"{math.floor(avg_beds)}", f"{math.floor(avg_demand)}", f"{math.floor(avg_refused)}"],
-            textposition="inside",
-            textfont=dict(color="white", size=11, family="Arial Bold"),
-            hovertemplate="<b style='font-size:13px'>%{x}</b><br><b>Count:</b> %{text}<extra></extra>",
-            showlegend=False,
-        ))
-        
-        fig.update_layout(
-            title=dict(text=f"<b>{label} Summary</b><br><sub style='font-size:11px'>Week(s) {week_range[0]}-{week_range[1]} | Select multiple depts for comparison</sub>", font=dict(size=13)),
-            yaxis=dict(title="<b>Count</b>", gridcolor="#f0f0f0"),
-            template="plotly_white",
-            margin=dict(l=55, r=20, t=50, b=50),
-        )
-        
-        context = f"Select multiple departments to see comparison chart"
-        return fig, context
-    
-    # Multiple departments - show scatter
+        refused_show = float(df.groupby("week")["patients_refused"].sum().mean()) if len(df) else 0.0
+        refused_name = "Patients refused (avg/week)"
+        refused_disp = int(round(refused_show))
+
+    beds_disp = int(round(beds_avg))
+    demand_disp = int(round(demand_avg))
+
     fig = go.Figure()
-    
-    for _, row in agg.iterrows():
-        service = row["service"]
-        color = DEPT_COLORS.get(service, "#3498db")
-        label = DEPT_LABELS.get(service, service)
-        
-        fig.add_trace(go.Scatter(
-            x=[row["available_beds"]],
-            y=[row["refusal_rate"]],
-            mode="markers+text",
-            name=label,
-            marker=dict(
-                size=row["patients_request"] / 50,
-                color=color,
-                opacity=0.7,
-                line=dict(width=2, color="white"),
-            ),
-            text=[label],
-            textposition="top center",
-            textfont=dict(size=10),
-            customdata=[[row["patients_refused"], row["patients_request"]]],
-            hovertemplate=(
-                f"<b>{label}</b><br>" +
-                "Beds: %{x:.0f}<br>" +
-                "Refusal Rate: %{y:.1f}%<br>" +
-                "Refused: %{customdata[0]}<br>" +
-                "Demand: %{customdata[1]}<br>" +
-                "<extra></extra>"
-            ),
-            showlegend=False,
-        ))
-    
-    # Trendline
-    if len(agg) > 2:
+
+    fig.add_trace(go.Bar(
+        x=["Beds (avg/week)"], y=[beds_avg],
+        text=[f"{beds_disp}"], textposition="outside",
+        marker=dict(color="#3498db"),
+        hovertemplate="Beds (avg/week): %{y:.1f}<extra></extra>",
+    ))
+
+    fig.add_trace(go.Bar(
+        x=["Demand (avg/week)"], y=[demand_avg],
+        text=[f"{demand_disp}"], textposition="outside",
+        marker=dict(color="#1abc9c"),
+        hovertemplate="Demand (avg/week): %{y:.1f}<extra></extra>",
+    ))
+
+    fig.add_trace(go.Bar(
+        x=[refused_name], y=[refused_show],
+        text=[f"{refused_disp}"], textposition="outside",
+        marker=dict(color="#e67e22"),
+        hovertemplate=refused_name + ": %{y:.1f}<extra></extra>" if refusal_metric == "rate" else refused_name + ": %{y}<extra></extra>",
+    ))
+
+    # --- UPGRADE #2: selection context in title ---
+    base_title = " / ".join([DEPT_LABELS.get(d, d) for d in depts]) + " Summary"
+    if selected_week is not None:
         try:
-            slope, intercept, r_value, _, _ = stats.linregress(agg["available_beds"], agg["refusal_rate"])
-            x_trend = np.array([agg["available_beds"].min(), agg["available_beds"].max()])
-            y_trend = slope * x_trend + intercept
-            
-            fig.add_trace(go.Scatter(
-                x=x_trend,
-                y=y_trend,
-                mode="lines",
-                name="Expected",
-                line=dict(color="red", width=2, dash="dash"),
-                hovertemplate=f"Expected<br>R²={r_value**2:.2f}<extra></extra>",
-            ))
-        except:
-            pass
-    
-    # Quadrant lines
-    avg_beds = agg["available_beds"].mean()
-    avg_refusal = agg["refusal_rate"].mean()
-    
-    fig.add_vline(x=avg_beds, line_dash="dot", line_color="gray", opacity=0.3)
-    fig.add_hline(y=avg_refusal, line_dash="dot", line_color="gray", opacity=0.3)
-    
-    # Quadrant labels
-    max_x, min_x = agg["available_beds"].max(), agg["available_beds"].min()
-    max_y, min_y = agg["refusal_rate"].max(), agg["refusal_rate"].min()
-    
-    fig.add_annotation(x=min_x + (avg_beds - min_x) * 0.3, y=max_y * 0.85, text="<b>UNDER-CAPACITY</b><br>Low beds + High refusals<br>→ Need more beds", showarrow=False, font=dict(size=9, color="red"), bgcolor="rgba(255,0,0,0.08)", bordercolor="red", borderwidth=1, borderpad=4)
-    fig.add_annotation(x=avg_beds + (max_x - avg_beds) * 0.7, y=max_y * 0.85, text="<b>INEFFICIENT</b><br>High beds + High refusals<br>→ Process problem", showarrow=False, font=dict(size=9, color="orange"), bgcolor="rgba(255,165,0,0.08)", bordercolor="orange", borderwidth=1, borderpad=4)
-    fig.add_annotation(x=min_x + (avg_beds - min_x) * 0.3, y=min_y + (avg_refusal - min_y) * 0.3, text="<b>EFFICIENT</b><br>Low beds + Low refusals<br>→ Well-matched", showarrow=False, font=dict(size=9, color="green"), bgcolor="rgba(0,128,0,0.08)", bordercolor="green", borderwidth=1, borderpad=4)
-    fig.add_annotation(x=avg_beds + (max_x - avg_beds) * 0.7, y=min_y + (avg_refusal - min_y) * 0.3, text="<b>OVER-CAPACITY</b><br>High beds + Low refusals<br>→ Reallocation source", showarrow=False, font=dict(size=9, color="blue"), bgcolor="rgba(0,0,255,0.08)", bordercolor="blue", borderwidth=1, borderpad=4)
-    
-    fig.update_layout(
-        title=dict(
-            text="<b>Refusal Rate vs Capacity</b><br><sub style='font-size:11px'>Size=Demand | Quadrants show reallocation strategy</sub>",
-            font=dict(size=13)
-        ),
-        xaxis=dict(title="<b>Allocated Beds</b>", gridcolor="#f0f0f0"),
-        yaxis=dict(title="<b>Refusal Rate (%)</b>", gridcolor="#f0f0f0"),
-        template="plotly_white",
-        hovermode="closest",
-        margin=dict(l=55, r=55, t=50, b=50),
-    )
-    
-    # Reallocation recommendation
-    high_refusal = agg[agg["refusal_rate"] > avg_refusal].sort_values("refusal_rate", ascending=False)
-    low_refusal = agg[agg["refusal_rate"] < avg_refusal].sort_values("available_beds", ascending=False)
-    
-    if not high_refusal.empty and not low_refusal.empty:
-        worst = DEPT_LABELS.get(high_refusal.iloc[0]["service"], high_refusal.iloc[0]["service"])
-        best = DEPT_LABELS.get(low_refusal.iloc[0]["service"], low_refusal.iloc[0]["service"])
-        context = f"Week(s) {week_range[0]}-{week_range[1]} | Reallocation: {best} → {worst} | {refused_label}"
+            w = int(selected_week)
+            context = f"(Selected: Week {w})"
+        except Exception:
+            context = f"(Weeks {week_min}–{week_max})"
     else:
-        context = f"Week(s) {week_range[0]}-{week_range[1]} | {len(agg)} depts | {refused_label}"
-    
-    return fig, context
+        context = f"(Weeks {week_min}–{week_max})"
+    title_text = f"{base_title} {context}"
+
+    # Headroom for outside text labels
+    max_y = max([beds_avg, demand_avg, refused_show, 1.0])
+    fig.update_yaxes(range=[0, max_y * 1.18], rangemode="tozero", automargin=True)
+
+    fig.update_layout(
+        title=dict(text=title_text, x=0.02, xanchor="left", font=dict(size=18)),
+        height=480,
+        margin=dict(l=55, r=20, t=75, b=95),
+        plot_bgcolor="white",
+        paper_bgcolor="white",
+        showlegend=False,
+        yaxis_title="Value",
+        uniformtext_minsize=10,
+        uniformtext_mode="hide",
+    )
+
+    fig.update_xaxes(tickangle=20, automargin=True)
+    return fig
 
 
-# ==================================================================
-# T3: HEATMAP & STACKED (Same - working well)
-# ==================================================================
+@callback(
+    Output("distribution-modal", "style"),
+    [Input("show-distribution-btn", "n_clicks"), Input("close-distribution-btn", "n_clicks")],
+    prevent_initial_call=True,
+)
+def toggle_distribution_modal(open_clicks, close_clicks):
+    if ctx.triggered_id == "show-distribution-btn":
+        return {"display": "block"}
+    return {"display": "none"}
+
+
+@callback(
+    Output("distribution-chart", "figure"),
+    Input("show-distribution-btn", "n_clicks"),
+    [State("dept-filter", "value"), State("week-slider", "value")],
+    prevent_initial_call=True,
+)
+def update_distribution_chart(n_clicks, depts, week_range):
+    services = get_services_data()
+    depts = depts or ["emergency"]
+    week_min, week_max = week_range
+
+    df = services[(services["week"] >= week_min) & (services["week"] <= week_max)].copy()
+    df = df[df["service"].isin(depts)].copy()
+
+    fig = go.Figure()
+    for dept in depts:
+        ddf = df[df["service"] == dept]
+        fig.add_trace(go.Box(
+            y=ddf["available_beds"],
+            name=DEPT_LABELS.get(dept, dept),
+            marker=dict(color=DEPT_COLORS.get(dept, "#666")),
+            boxmean=True,
+        ))
+
+    fig.update_layout(
+        title="Bed Distribution (selected time range)",
+        height=500,
+        margin=dict(l=50, r=20, t=50, b=40),
+        plot_bgcolor="white",
+        paper_bgcolor="white",
+        yaxis_title="Available beds",
+    )
+    return fig
+
 
 @callback(
     Output("t3-heatmap-chart", "figure"),
-    [Input("dept-filter", "value"), Input("week-slider", "value"), Input("quantity-tabs", "value")],
+    [Input("dept-filter", "value"), Input("week-slider", "value"), Input("quantity-selected-week", "data")],
 )
-def update_t3_heatmap(selected_depts, week_range, active_tab):
-    if active_tab != "tab-t3":
-        raise PreventUpdate
-    df = _filter_services(selected_depts, week_range)
-    if df.empty:
-        return _empty_fig("No data")
-    df["pressure"] = (df["patients_admitted"] / df["available_beds"]).fillna(0).clip(0, 1.5)
-    pivot = df.pivot_table(index="service", columns="week", values="pressure", aggfunc="mean").fillna(0)
-    pivot["avg"] = pivot.mean(axis=1)
-    pivot = pivot.sort_values("avg", ascending=False).drop("avg", axis=1)
-    y_labels = [DEPT_LABELS.get(s, s) for s in pivot.index]
-    fig = go.Figure(data=go.Heatmap(z=pivot.values, x=pivot.columns.tolist(), y=y_labels, colorscale=[[0, "#d4edda"], [0.5, "#fff3cd"], [0.8, "#f8d7da"], [1, "#721c24"]], colorbar=dict(title="Pressure", tickmode="linear", tick0=0, dtick=0.3, len=0.7), hovertemplate="<b>%{y}</b><br>Week %{x}<br>Pressure: %{z:.2f}<extra></extra>"))
-    fig.update_layout(title=dict(text="<b>T3: Bed Pressure Heatmap</b><br><sub>Click to filter stacked area</sub>", font=dict(size=11)), xaxis=dict(title="<b>Week</b>", side="bottom", gridcolor="#f0f0f0"), yaxis=dict(title=""), template="plotly_white", margin=dict(l=100, r=80, t=45, b=40))
+def update_t3_heatmap(depts, week_range, selected_week):
+    services = get_services_data()
+    depts = depts or ["emergency"]
+    week_min, week_max = week_range
+
+    df = services[(services["week"] >= week_min) & (services["week"] <= week_max)].copy()
+    df = df[df["service"].isin(depts)].copy()
+
+    pivot = df.pivot_table(index="service", columns="week", values="utilization_rate", aggfunc="mean").reindex(depts)
+
+    fig = go.Figure(
+        data=go.Heatmap(
+            z=pivot.values,
+            x=pivot.columns.tolist(),
+            y=[DEPT_LABELS.get(s, s) for s in pivot.index.tolist()],
+            colorbar=dict(title="Utilization %"),
+            hovertemplate="Week %{x}<br>%{y}<br>Utilization: %{z:.1f}%<extra></extra>",
+        )
+    )
+
+    fig.update_layout(
+        title="T3: Utilization Heatmap (proxy for occupancy pressure)",
+        height=420,
+        margin=dict(l=90, r=20, t=60, b=40),
+        plot_bgcolor="white",
+        paper_bgcolor="white",
+    )
+
+    if selected_week is not None:
+        try:
+            w = int(selected_week)
+            if week_min <= w <= week_max:
+                fig.add_vrect(
+                    x0=w - 0.5, x1=w + 0.5,
+                    fillcolor="rgba(52,152,219,0.18)",
+                    line_width=0,
+                    layer="above",
+                )
+        except Exception:
+            pass
+
     return fig
 
 
 @callback(
     Output("t3-stacked-chart", "figure"),
-    [Input("dept-filter", "value"), Input("week-slider", "value"), Input("t3-bucket-selector", "value"), Input("quantity-tabs", "value"), Input("t3-heatmap-chart", "clickData")],
+    [Input("dept-filter", "value"), Input("week-slider", "value"), Input("t3-bucket-selector", "value")],
 )
-def update_t3_stacked(selected_depts, week_range, bucket_mode, active_tab, heatmap_click):
-    if active_tab != "tab-t3":
-        raise PreventUpdate
-    df = _filter_patients(selected_depts, week_range)
-    selected_service = None
-    if heatmap_click and "points" in heatmap_click:
-        clicked_label = heatmap_click["points"][0]["y"]
-        service_map = {v: k for k, v in DEPT_LABELS.items()}
-        if clicked_label in service_map:
-            selected_service = service_map[clicked_label]
-            df = df[df["service"] == selected_service]
-    if df.empty or "arrival_week" not in df.columns:
-        return _empty_fig("No patient data | Click heatmap")
-    buckets = [(0, 3, "0-3"), (4, 7, "4-7"), (8, 999, "8+")] if bucket_mode == "coarse" else [(0, 1, "0-1"), (2, 3, "2-3"), (4, 7, "4-7"), (8, 999, "8+")]
-    def assign_bucket(los):
-        for min_los, max_los, label in buckets:
-            if min_los <= los <= max_los:
-                return label
-        return buckets[-1][2]
-    df["los_bucket"] = df["length_of_stay"].apply(assign_bucket)
-    bed_days = df.groupby(["arrival_week", "los_bucket"]).agg({"length_of_stay": "sum"}).reset_index()
-    bed_days.columns = ["week", "bucket", "bed_days"]
-    pivot = bed_days.pivot_table(index="week", columns="bucket", values="bed_days", fill_value=0)
-    for _, _, label in buckets:
-        if label not in pivot.columns:
-            pivot[label] = 0
-    bucket_order = [label for _, _, label in buckets]
-    pivot = pivot[[col for col in bucket_order if col in pivot.columns]]
+def update_t3_stacked(depts, week_range, bucket_mode):
+    patients = get_patients_data()
+    depts = depts or ["emergency"]
+    week_min, week_max = week_range
+
+    df = patients[patients["service"].isin(depts)].copy()
+    df = df[(df["arrival_week"] >= week_min) & (df["arrival_week"] <= week_max)].copy()
+
+    if bucket_mode == "fine":
+        bins = [-1, 1, 3, 7, 999]
+        labels = ["0-1", "2-3", "4-7", "8+"]
+    else:
+        bins = [-1, 3, 7, 999]
+        labels = ["0-3", "4-7", "8+"]
+
+    df["bucket"] = pd.cut(df["length_of_stay"], bins=bins, labels=labels)
+
+    # ✅ FIX: silence pandas FutureWarning (categorical groupby default change)
+    grouped = (
+        df.groupby(["arrival_week", "bucket"], observed=True)
+        .size()
+        .reset_index(name="count")
+    )
+
+    weeks = list(range(week_min, week_max + 1))
     fig = go.Figure()
-    colors = ["#28a745", "#ffc107", "#fd7e14", "#dc3545"]
-    for i, bucket_label in enumerate(pivot.columns):
-        fig.add_trace(go.Scatter(x=pivot.index, y=pivot[bucket_label], mode="lines", name=f"{bucket_label} days", line=dict(width=0), fillcolor=colors[i % len(colors)], fill="tonexty" if i > 0 else "tozeroy", stackgroup="one", hovertemplate=f"<b>{bucket_label} days</b><br>Week %{{x}}<br>Bed-days: %{{y:.0f}}<extra></extra>"))
-    title_text = f"<b>T3: Bed-days by LOS</b><br><sub>{DEPT_LABELS.get(selected_service, 'All')} | Long stays blocking beds</sub>" if selected_service else "<b>T3: Bed-days by LOS</b><br><sub>Click heatmap to filter</sub>"
-    fig.update_layout(title=dict(text=title_text, font=dict(size=11)), xaxis=dict(title="<b>Week</b>", gridcolor="#f0f0f0"), yaxis=dict(title="<b>Bed-days</b>", gridcolor="#f0f0f0"), template="plotly_white", hovermode="x unified", legend=dict(orientation="h", yanchor="bottom", y=-0.25, xanchor="center", x=0.5, font=dict(size=8)), margin=dict(l=50, r=20, t=45, b=70))
+
+    for label in labels:
+        tmp = grouped[grouped["bucket"] == label]
+        y = [int(tmp[tmp["arrival_week"] == w]["count"].sum()) for w in weeks]
+        fig.add_trace(go.Scatter(
+            x=weeks, y=y, mode="lines", stackgroup="one",
+            name=f"LOS {label}",
+            hovertemplate="Week %{x}<br>" + f"{label}" + ": %{y}<extra></extra>",
+        ))
+
+    fig.update_layout(
+        title="T3: Stay Duration Distribution (stacked)",
+        height=420,
+        margin=dict(l=50, r=20, t=60, b=40),
+        plot_bgcolor="white",
+        paper_bgcolor="white",
+        xaxis_title="Week",
+        yaxis_title="Patients",
+    )
     return fig
-
-
-# ==================================================================
-# REGISTRATION
-# ==================================================================
-
-def register_quantity_callbacks():
-    pass
