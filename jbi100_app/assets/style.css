@@ -128,6 +128,14 @@ button:active {
     box-shadow: 0 0 5px #3498db;
 }
 
+/* Quality week slider alignment with bar chart (range 0-53 with phantom weeks) */
+#quality-week-slider {
+    /* Slider covers weeks 1-52, chart covers 0-53 */
+    /* Week 1 in chart is at 1/53 of plot area, so add ~2% padding */
+    padding-left: calc(7px + 1.887%) !important;
+    padding-right: calc(7px + 1.887%) !important;
+}
+
 
 /* =============================================================================
    CHECKBOX STYLING

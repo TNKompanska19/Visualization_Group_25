@@ -10,7 +10,6 @@ from dash import html, dcc
 from jbi100_app.data import get_services_data, build_week_data_store
 from jbi100_app.views.menu import create_sidebar
 
-
 def create_layout():
     """
     Create the main dashboard layout.

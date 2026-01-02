@@ -88,6 +88,16 @@ def get_patients_data():
     return df
 
 
+def get_staff_schedule_data():
+    """
+    Load staff schedule data.
+    
+    Returns:
+        pd.DataFrame: Staff schedule data
+    """
+    return load_staff_schedule()
+
+
 def get_all_data():
     """
     Load all datasets with preprocessing.
@@ -98,7 +108,7 @@ def get_all_data():
     services = get_services_data()
     patients = get_patients_data()
     staff = load_staff()
-    schedule = load_staff_schedule()
+    schedule = get_staff_schedule_data()
     
     return services, patients, staff, schedule
 

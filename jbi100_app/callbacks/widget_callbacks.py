@@ -8,16 +8,17 @@ Callbacks for widget rendering and swapping:
 - Widget swap on click
 """
 
-from dash import callback, Output, Input, State, ctx
+from dash import callback, Output, Input, State, ctx, html
 
-from jbi100_app.data import get_services_data, get_patients_data
+from jbi100_app.data import get_services_data, get_patients_data, get_staff_schedule_data
 from jbi100_app.views.overview import create_overview_expanded, create_overview_mini
 from jbi100_app.views.quantity import create_quantity_expanded, create_quantity_mini
-from jbi100_app.views.quality import create_quality_expanded, create_quality_mini
+from jbi100_app.views.quality import create_quality_widget
 
 # Load data once
 _services_df = get_services_data()
 _patients_df = get_patients_data()
+_staff_schedule_df = get_staff_schedule_data()
 
 
 def register_widget_callbacks():
@@ -96,11 +97,19 @@ def register_widget_callbacks():
                 _services_df, _patients_df, selected_depts, week_range
             )
         else:  # quality
-            main_content = create_quality_expanded(
-                _services_df, selected_depts, week_range
+            main_content = create_quality_widget(
+                _services_df, _staff_schedule_df, selected_depts, week_range
             )
         
         # Create mini widgets
+        def create_quality_mini(services_df, selected_depts, week_range):
+            """Mini placeholder for quality widget"""
+            return html.Div([
+                html.H4("Quality Analysis", style={'color': '#2c3e50', 'fontSize': '14px'}),
+                html.P("Staff impact on morale & satisfaction", 
+                       style={'color': '#7f8c8d', 'fontSize': '11px'})
+            ])
+        
         mini_creators = {
             "overview": lambda: create_overview_mini(_services_df, selected_depts, week_range),
             "quantity": lambda: create_quantity_mini(_services_df, selected_depts, week_range),
