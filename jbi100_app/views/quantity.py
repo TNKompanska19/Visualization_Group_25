@@ -1,9 +1,9 @@
 """
-Quantity View - SIDE-BY-SIDE LAYOUT
+Quantity View - REDESIGNED T3 WITH VIOLIN + GANTT
 JBI100 Visualization - Group 25
 
-T2: Left (weekly bars) + Right (comparison/summary)
-T3: Heatmap + stacked area
+T2: Left (weekly bars) + Right (comparison/summary) + Modal (bed distribution)
+T3: Heatmap + Switchable (Violin ↔ Gantt with tab button)
 """
 
 from dash import html, dcc
@@ -29,15 +29,20 @@ def create_quantity_expanded(services_df, patients_df, selected_depts, week_rang
         ],
     )
 
-    # T2 graphs - side by side
+    # T2 graphs
     t2_weekly = dcc.Graph(id="t2-spc-chart", config={"displayModeBar": True, "displaylogo": False}, style={"height": "100%"})
     t2_comparison = dcc.Graph(id="t2-detail-chart", config={"displayModeBar": True, "displaylogo": False}, style={"height": "100%"})
     
     # T3 graphs
-    t3_heatmap = dcc.Graph(id="t3-heatmap-chart", config={"displayModeBar": True, "displaylogo": False}, style={"height": "100%"})
-    t3_stacked = dcc.Graph(id="t3-stacked-chart", config={"displayModeBar": True, "displaylogo": False}, style={"height": "100%"})
+    t3_line = dcc.Graph(id="t3-line-chart", config={"displayModeBar": True, "displaylogo": False}, style={"height": "100%"})
+    t3_violin = dcc.Graph(id="t3-violin-chart", config={"displayModeBar": True, "displaylogo": False}, style={"height": "100%"})
+    t3_gantt = dcc.Graph(id="t3-gantt-chart", config={"displayModeBar": True, "displaylogo": False}, style={"height": "100%"})
+    
+    # Store for selected service/week from heatmap
+    dcc.Store(id="t3-selected-service", data=None),
+    dcc.Store(id="t3-selected-week-range", data=None),
 
-    # T2 Content - SIDE BY SIDE
+    # T2 Content - SIDE BY SIDE + MODAL
     t2_content = html.Div(
         id="quantity-t2-content",
         style={"display": "flex", "flexDirection": "column", "gap": "8px", "height": "100%"},
@@ -65,7 +70,6 @@ def create_quantity_expanded(services_df, patients_df, selected_depts, week_rang
                     ]
                 ),
             ]),
-            # SIDE BY SIDE: Left (weekly) + Right (comparison)
             html.Div(
                 style={"flex": "1", "display": "flex", "gap": "10px", "minHeight": "0"},
                 children=[
@@ -73,7 +77,6 @@ def create_quantity_expanded(services_df, patients_df, selected_depts, week_rang
                     html.Div(style={"flex": "0.35", "minWidth": "0"}, children=[t2_comparison]),
                 ],
             ),
-            # Modal for bed distribution
             html.Div(
                 id="distribution-modal",
                 style={"display": "none"},
@@ -133,19 +136,52 @@ def create_quantity_expanded(services_df, patients_df, selected_depts, week_rang
         ],
     )
 
-    # T3 Content
+    # T3 Content - HEATMAP + SWITCHABLE (Violin ↔ Gantt)
     t3_content = html.Div(
         id="quantity-t3-content",
         style={"display": "none", "flexDirection": "column", "gap": "6px", "height": "100%"},
         children=[
-            html.Div(style={"padding": "5px 10px", "backgroundColor": "#f8f9fa", "borderRadius": "4px", "flexShrink": "0"}, children=[
-                html.Label("Buckets:", style={"fontSize": "11px", "fontWeight": "500", "marginRight": "8px"}),
-                dcc.Dropdown(id="t3-bucket-selector", options=[{"label": "0-3, 4-7, 8+", "value": "coarse"}, {"label": "0-1, 2-3, 4-7, 8+", "value": "fine"}], value="coarse", clearable=False, style={"width": "140px", "fontSize": "11px", "display": "inline-block"}),
-            ]),
-            html.Div(style={"flex": "1", "display": "flex", "gap": "10px", "minHeight": "0"}, children=[
-                html.Div(style={"flex": "0.5", "minWidth": "0"}, children=[t3_heatmap]),
-                html.Div(style={"flex": "0.5", "minWidth": "0"}, children=[t3_stacked]),
-            ]),
+            html.Div(
+                style={"padding": "5px 10px", "backgroundColor": "#f8f9fa", "borderRadius": "4px", "flexShrink": "0"},
+                children=[
+                    html.Div(
+                        style={"display": "flex", "justifyContent": "space-between", "alignItems": "center"},
+                        children=[
+                        html.Div(
+                        id="t3-context",
+                        style={"fontSize": "11px", "color": "#666"},
+                        children="Occupancy trends | Brush/zoom to select time period"
+                        ),
+                            html.Button(
+                                "📅 Patient Timeline",
+                                id="toggle-gantt-btn",
+                                n_clicks=0,
+                                style={
+                                    "padding": "5px 12px",
+                                    "backgroundColor": "#9b59b6",
+                                    "color": "white",
+                                    "border": "none",
+                                    "borderRadius": "4px",
+                                    "cursor": "pointer",
+                                    "fontSize": "11px",
+                                    "fontWeight": "500",
+                                }
+                            ),
+                        ]
+                    ),
+                ]
+            ),
+            html.Div(
+                style={"flex": "1", "display": "flex", "gap": "10px", "minHeight": "0"},
+                children=[
+                    html.Div(style={"flex": "0.5", "minWidth": "0"}, children=[t3_line]),
+                    html.Div(
+                        id="t3-switchable-container",
+                        style={"flex": "0.5", "minWidth": "0"},
+                        children=[t3_violin]  # Default: violin plot
+                    ),
+                ],
+            ),
         ],
     )
 

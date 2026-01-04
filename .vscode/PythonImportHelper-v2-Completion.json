@@ -1,0 +1,1606 @@
+[
+    {
+        "label": "runpy",
+        "kind": 6,
+        "isExtraImport": true,
+        "importPath": "runpy",
+        "description": "runpy",
+        "detail": "runpy",
+        "documentation": {}
+    },
+    {
+        "label": "annotations",
+        "importPath": "__future__",
+        "description": "__future__",
+        "isExtraImport": true,
+        "detail": "__future__",
+        "documentation": {}
+    },
+    {
+        "label": "os",
+        "kind": 6,
+        "isExtraImport": true,
+        "importPath": "os",
+        "description": "os",
+        "detail": "os",
+        "documentation": {}
+    },
+    {
+        "label": "site",
+        "kind": 6,
+        "isExtraImport": true,
+        "importPath": "site",
+        "description": "site",
+        "detail": "site",
+        "documentation": {}
+    },
+    {
+        "label": "sys",
+        "kind": 6,
+        "isExtraImport": true,
+        "importPath": "sys",
+        "description": "sys",
+        "detail": "sys",
+        "documentation": {}
+    },
+    {
+        "label": "callback",
+        "importPath": "dash",
+        "description": "dash",
+        "isExtraImport": true,
+        "detail": "dash",
+        "documentation": {}
+    },
+    {
+        "label": "Output",
+        "importPath": "dash",
+        "description": "dash",
+        "isExtraImport": true,
+        "detail": "dash",
+        "documentation": {}
+    },
+    {
+        "label": "Input",
+        "importPath": "dash",
+        "description": "dash",
+        "isExtraImport": true,
+        "detail": "dash",
+        "documentation": {}
+    },
+    {
+        "label": "State",
+        "importPath": "dash",
+        "description": "dash",
+        "isExtraImport": true,
+        "detail": "dash",
+        "documentation": {}
+    },
+    {
+        "label": "html",
+        "importPath": "dash",
+        "description": "dash",
+        "isExtraImport": true,
+        "detail": "dash",
+        "documentation": {}
+    },
+    {
+        "label": "callback",
+        "importPath": "dash",
+        "description": "dash",
+        "isExtraImport": true,
+        "detail": "dash",
+        "documentation": {}
+    },
+    {
+        "label": "Output",
+        "importPath": "dash",
+        "description": "dash",
+        "isExtraImport": true,
+        "detail": "dash",
+        "documentation": {}
+    },
+    {
+        "label": "Input",
+        "importPath": "dash",
+        "description": "dash",
+        "isExtraImport": true,
+        "detail": "dash",
+        "documentation": {}
+    },
+    {
+        "label": "State",
+        "importPath": "dash",
+        "description": "dash",
+        "isExtraImport": true,
+        "detail": "dash",
+        "documentation": {}
+    },
+    {
+        "label": "no_update",
+        "importPath": "dash",
+        "description": "dash",
+        "isExtraImport": true,
+        "detail": "dash",
+        "documentation": {}
+    },
+    {
+        "label": "dcc",
+        "importPath": "dash",
+        "description": "dash",
+        "isExtraImport": true,
+        "detail": "dash",
+        "documentation": {}
+    },
+    {
+        "label": "callback",
+        "importPath": "dash",
+        "description": "dash",
+        "isExtraImport": true,
+        "detail": "dash",
+        "documentation": {}
+    },
+    {
+        "label": "Output",
+        "importPath": "dash",
+        "description": "dash",
+        "isExtraImport": true,
+        "detail": "dash",
+        "documentation": {}
+    },
+    {
+        "label": "Input",
+        "importPath": "dash",
+        "description": "dash",
+        "isExtraImport": true,
+        "detail": "dash",
+        "documentation": {}
+    },
+    {
+        "label": "State",
+        "importPath": "dash",
+        "description": "dash",
+        "isExtraImport": true,
+        "detail": "dash",
+        "documentation": {}
+    },
+    {
+        "label": "ctx",
+        "importPath": "dash",
+        "description": "dash",
+        "isExtraImport": true,
+        "detail": "dash",
+        "documentation": {}
+    },
+    {
+        "label": "callback",
+        "importPath": "dash",
+        "description": "dash",
+        "isExtraImport": true,
+        "detail": "dash",
+        "documentation": {}
+    },
+    {
+        "label": "Output",
+        "importPath": "dash",
+        "description": "dash",
+        "isExtraImport": true,
+        "detail": "dash",
+        "documentation": {}
+    },
+    {
+        "label": "Input",
+        "importPath": "dash",
+        "description": "dash",
+        "isExtraImport": true,
+        "detail": "dash",
+        "documentation": {}
+    },
+    {
+        "label": "State",
+        "importPath": "dash",
+        "description": "dash",
+        "isExtraImport": true,
+        "detail": "dash",
+        "documentation": {}
+    },
+    {
+        "label": "ctx",
+        "importPath": "dash",
+        "description": "dash",
+        "isExtraImport": true,
+        "detail": "dash",
+        "documentation": {}
+    },
+    {
+        "label": "html",
+        "importPath": "dash",
+        "description": "dash",
+        "isExtraImport": true,
+        "detail": "dash",
+        "documentation": {}
+    },
+    {
+        "label": "dcc",
+        "importPath": "dash",
+        "description": "dash",
+        "isExtraImport": true,
+        "detail": "dash",
+        "documentation": {}
+    },
+    {
+        "label": "html",
+        "importPath": "dash",
+        "description": "dash",
+        "isExtraImport": true,
+        "detail": "dash",
+        "documentation": {}
+    },
+    {
+        "label": "dcc",
+        "importPath": "dash",
+        "description": "dash",
+        "isExtraImport": true,
+        "detail": "dash",
+        "documentation": {}
+    },
+    {
+        "label": "html",
+        "importPath": "dash",
+        "description": "dash",
+        "isExtraImport": true,
+        "detail": "dash",
+        "documentation": {}
+    },
+    {
+        "label": "dcc",
+        "importPath": "dash",
+        "description": "dash",
+        "isExtraImport": true,
+        "detail": "dash",
+        "documentation": {}
+    },
+    {
+        "label": "html",
+        "importPath": "dash",
+        "description": "dash",
+        "isExtraImport": true,
+        "detail": "dash",
+        "documentation": {}
+    },
+    {
+        "label": "dcc",
+        "importPath": "dash",
+        "description": "dash",
+        "isExtraImport": true,
+        "detail": "dash",
+        "documentation": {}
+    },
+    {
+        "label": "html",
+        "importPath": "dash",
+        "description": "dash",
+        "isExtraImport": true,
+        "detail": "dash",
+        "documentation": {}
+    },
+    {
+        "label": "dcc",
+        "importPath": "dash",
+        "description": "dash",
+        "isExtraImport": true,
+        "detail": "dash",
+        "documentation": {}
+    },
+    {
+        "label": "Dash",
+        "importPath": "dash",
+        "description": "dash",
+        "isExtraImport": true,
+        "detail": "dash",
+        "documentation": {}
+    },
+    {
+        "label": "Dash",
+        "importPath": "dash",
+        "description": "dash",
+        "isExtraImport": true,
+        "detail": "dash",
+        "documentation": {}
+    },
+    {
+        "label": "html",
+        "importPath": "dash",
+        "description": "dash",
+        "isExtraImport": true,
+        "detail": "dash",
+        "documentation": {}
+    },
+    {
+        "label": "dcc",
+        "importPath": "dash",
+        "description": "dash",
+        "isExtraImport": true,
+        "detail": "dash",
+        "documentation": {}
+    },
+    {
+        "label": "callback",
+        "importPath": "dash",
+        "description": "dash",
+        "isExtraImport": true,
+        "detail": "dash",
+        "documentation": {}
+    },
+    {
+        "label": "Output",
+        "importPath": "dash",
+        "description": "dash",
+        "isExtraImport": true,
+        "detail": "dash",
+        "documentation": {}
+    },
+    {
+        "label": "Input",
+        "importPath": "dash",
+        "description": "dash",
+        "isExtraImport": true,
+        "detail": "dash",
+        "documentation": {}
+    },
+    {
+        "label": "State",
+        "importPath": "dash",
+        "description": "dash",
+        "isExtraImport": true,
+        "detail": "dash",
+        "documentation": {}
+    },
+    {
+        "label": "ctx",
+        "importPath": "dash",
+        "description": "dash",
+        "isExtraImport": true,
+        "detail": "dash",
+        "documentation": {}
+    },
+    {
+        "label": "PreventUpdate",
+        "importPath": "dash.exceptions",
+        "description": "dash.exceptions",
+        "isExtraImport": true,
+        "detail": "dash.exceptions",
+        "documentation": {}
+    },
+    {
+        "label": "PreventUpdate",
+        "importPath": "dash.exceptions",
+        "description": "dash.exceptions",
+        "isExtraImport": true,
+        "detail": "dash.exceptions",
+        "documentation": {}
+    },
+    {
+        "label": "numpy",
+        "kind": 6,
+        "isExtraImport": true,
+        "importPath": "numpy",
+        "description": "numpy",
+        "detail": "numpy",
+        "documentation": {}
+    },
+    {
+        "label": "DEPT_COLORS",
+        "importPath": "jbi100_app.config",
+        "description": "jbi100_app.config",
+        "isExtraImport": true,
+        "detail": "jbi100_app.config",
+        "documentation": {}
+    },
+    {
+        "label": "DEPT_LABELS_SHORT",
+        "importPath": "jbi100_app.config",
+        "description": "jbi100_app.config",
+        "isExtraImport": true,
+        "detail": "jbi100_app.config",
+        "documentation": {}
+    },
+    {
+        "label": "DEPT_COLORS",
+        "importPath": "jbi100_app.config",
+        "description": "jbi100_app.config",
+        "isExtraImport": true,
+        "detail": "jbi100_app.config",
+        "documentation": {}
+    },
+    {
+        "label": "DEPT_LABELS",
+        "importPath": "jbi100_app.config",
+        "description": "jbi100_app.config",
+        "isExtraImport": true,
+        "detail": "jbi100_app.config",
+        "documentation": {}
+    },
+    {
+        "label": "DEPT_LABELS",
+        "importPath": "jbi100_app.config",
+        "description": "jbi100_app.config",
+        "isExtraImport": true,
+        "detail": "jbi100_app.config",
+        "documentation": {}
+    },
+    {
+        "label": "DEPT_COLORS",
+        "importPath": "jbi100_app.config",
+        "description": "jbi100_app.config",
+        "isExtraImport": true,
+        "detail": "jbi100_app.config",
+        "documentation": {}
+    },
+    {
+        "label": "DEPT_LABELS",
+        "importPath": "jbi100_app.config",
+        "description": "jbi100_app.config",
+        "isExtraImport": true,
+        "detail": "jbi100_app.config",
+        "documentation": {}
+    },
+    {
+        "label": "DEPT_LABELS_SHORT",
+        "importPath": "jbi100_app.config",
+        "description": "jbi100_app.config",
+        "isExtraImport": true,
+        "detail": "jbi100_app.config",
+        "documentation": {}
+    },
+    {
+        "label": "EVENT_COLORS",
+        "importPath": "jbi100_app.config",
+        "description": "jbi100_app.config",
+        "isExtraImport": true,
+        "detail": "jbi100_app.config",
+        "documentation": {}
+    },
+    {
+        "label": "EVENT_ICONS",
+        "importPath": "jbi100_app.config",
+        "description": "jbi100_app.config",
+        "isExtraImport": true,
+        "detail": "jbi100_app.config",
+        "documentation": {}
+    },
+    {
+        "label": "WIDGET_INFO",
+        "importPath": "jbi100_app.config",
+        "description": "jbi100_app.config",
+        "isExtraImport": true,
+        "detail": "jbi100_app.config",
+        "documentation": {}
+    },
+    {
+        "label": "ZOOM_THRESHOLDS",
+        "importPath": "jbi100_app.config",
+        "description": "jbi100_app.config",
+        "isExtraImport": true,
+        "detail": "jbi100_app.config",
+        "documentation": {}
+    },
+    {
+        "label": "CHART_CONFIG",
+        "importPath": "jbi100_app.config",
+        "description": "jbi100_app.config",
+        "isExtraImport": true,
+        "detail": "jbi100_app.config",
+        "documentation": {}
+    },
+    {
+        "label": "SEMANTIC_COLORS",
+        "importPath": "jbi100_app.config",
+        "description": "jbi100_app.config",
+        "isExtraImport": true,
+        "detail": "jbi100_app.config",
+        "documentation": {}
+    },
+    {
+        "label": "DEPT_COLORS",
+        "importPath": "jbi100_app.config",
+        "description": "jbi100_app.config",
+        "isExtraImport": true,
+        "detail": "jbi100_app.config",
+        "documentation": {}
+    },
+    {
+        "label": "DEPT_LABELS",
+        "importPath": "jbi100_app.config",
+        "description": "jbi100_app.config",
+        "isExtraImport": true,
+        "detail": "jbi100_app.config",
+        "documentation": {}
+    },
+    {
+        "label": "WIDGET_INFO",
+        "importPath": "jbi100_app.config",
+        "description": "jbi100_app.config",
+        "isExtraImport": true,
+        "detail": "jbi100_app.config",
+        "documentation": {}
+    },
+    {
+        "label": "CHART_CONFIG",
+        "importPath": "jbi100_app.config",
+        "description": "jbi100_app.config",
+        "isExtraImport": true,
+        "detail": "jbi100_app.config",
+        "documentation": {}
+    },
+    {
+        "label": "WIDGET_INFO",
+        "importPath": "jbi100_app.config",
+        "description": "jbi100_app.config",
+        "isExtraImport": true,
+        "detail": "jbi100_app.config",
+        "documentation": {}
+    },
+    {
+        "label": "get_services_data",
+        "importPath": "jbi100_app.data",
+        "description": "jbi100_app.data",
+        "isExtraImport": true,
+        "detail": "jbi100_app.data",
+        "documentation": {}
+    },
+    {
+        "label": "get_services_data",
+        "importPath": "jbi100_app.data",
+        "description": "jbi100_app.data",
+        "isExtraImport": true,
+        "detail": "jbi100_app.data",
+        "documentation": {}
+    },
+    {
+        "label": "get_patients_data",
+        "importPath": "jbi100_app.data",
+        "description": "jbi100_app.data",
+        "isExtraImport": true,
+        "detail": "jbi100_app.data",
+        "documentation": {}
+    },
+    {
+        "label": "get_services_data",
+        "importPath": "jbi100_app.data",
+        "description": "jbi100_app.data",
+        "isExtraImport": true,
+        "detail": "jbi100_app.data",
+        "documentation": {}
+    },
+    {
+        "label": "get_patients_data",
+        "importPath": "jbi100_app.data",
+        "description": "jbi100_app.data",
+        "isExtraImport": true,
+        "detail": "jbi100_app.data",
+        "documentation": {}
+    },
+    {
+        "label": "get_services_data",
+        "importPath": "jbi100_app.data",
+        "description": "jbi100_app.data",
+        "isExtraImport": true,
+        "detail": "jbi100_app.data",
+        "documentation": {}
+    },
+    {
+        "label": "build_week_data_store",
+        "importPath": "jbi100_app.data",
+        "description": "jbi100_app.data",
+        "isExtraImport": true,
+        "detail": "jbi100_app.data",
+        "documentation": {}
+    },
+    {
+        "label": "build_tooltip_content",
+        "importPath": "jbi100_app.views.overview",
+        "description": "jbi100_app.views.overview",
+        "isExtraImport": true,
+        "detail": "jbi100_app.views.overview",
+        "documentation": {}
+    },
+    {
+        "label": "get_zoom_level",
+        "importPath": "jbi100_app.views.overview",
+        "description": "jbi100_app.views.overview",
+        "isExtraImport": true,
+        "detail": "jbi100_app.views.overview",
+        "documentation": {}
+    },
+    {
+        "label": "_hex_to_rgba",
+        "importPath": "jbi100_app.views.overview",
+        "description": "jbi100_app.views.overview",
+        "isExtraImport": true,
+        "detail": "jbi100_app.views.overview",
+        "documentation": {}
+    },
+    {
+        "label": "get_zoom_level",
+        "importPath": "jbi100_app.views.overview",
+        "description": "jbi100_app.views.overview",
+        "isExtraImport": true,
+        "detail": "jbi100_app.views.overview",
+        "documentation": {}
+    },
+    {
+        "label": "create_overview_expanded",
+        "importPath": "jbi100_app.views.overview",
+        "description": "jbi100_app.views.overview",
+        "isExtraImport": true,
+        "detail": "jbi100_app.views.overview",
+        "documentation": {}
+    },
+    {
+        "label": "create_overview_mini",
+        "importPath": "jbi100_app.views.overview",
+        "description": "jbi100_app.views.overview",
+        "isExtraImport": true,
+        "detail": "jbi100_app.views.overview",
+        "documentation": {}
+    },
+    {
+        "label": "pandas",
+        "kind": 6,
+        "isExtraImport": true,
+        "importPath": "pandas",
+        "description": "pandas",
+        "detail": "pandas",
+        "documentation": {}
+    },
+    {
+        "label": "plotly.graph_objects",
+        "kind": 6,
+        "isExtraImport": true,
+        "importPath": "plotly.graph_objects",
+        "description": "plotly.graph_objects",
+        "detail": "plotly.graph_objects",
+        "documentation": {}
+    },
+    {
+        "label": "stats",
+        "importPath": "scipy",
+        "description": "scipy",
+        "isExtraImport": true,
+        "detail": "scipy",
+        "documentation": {}
+    },
+    {
+        "label": "math",
+        "kind": 6,
+        "isExtraImport": true,
+        "importPath": "math",
+        "description": "math",
+        "detail": "math",
+        "documentation": {}
+    },
+    {
+        "label": "get_sidebar_collapsed_style",
+        "importPath": "jbi100_app.views.menu",
+        "description": "jbi100_app.views.menu",
+        "isExtraImport": true,
+        "detail": "jbi100_app.views.menu",
+        "documentation": {}
+    },
+    {
+        "label": "get_sidebar_expanded_style",
+        "importPath": "jbi100_app.views.menu",
+        "description": "jbi100_app.views.menu",
+        "isExtraImport": true,
+        "detail": "jbi100_app.views.menu",
+        "documentation": {}
+    },
+    {
+        "label": "create_sidebar",
+        "importPath": "jbi100_app.views.menu",
+        "description": "jbi100_app.views.menu",
+        "isExtraImport": true,
+        "detail": "jbi100_app.views.menu",
+        "documentation": {}
+    },
+    {
+        "label": "create_quantity_expanded",
+        "importPath": "jbi100_app.views.quantity",
+        "description": "jbi100_app.views.quantity",
+        "isExtraImport": true,
+        "detail": "jbi100_app.views.quantity",
+        "documentation": {}
+    },
+    {
+        "label": "create_quantity_mini",
+        "importPath": "jbi100_app.views.quantity",
+        "description": "jbi100_app.views.quantity",
+        "isExtraImport": true,
+        "detail": "jbi100_app.views.quantity",
+        "documentation": {}
+    },
+    {
+        "label": "create_quality_expanded",
+        "importPath": "jbi100_app.views.quality",
+        "description": "jbi100_app.views.quality",
+        "isExtraImport": true,
+        "detail": "jbi100_app.views.quality",
+        "documentation": {}
+    },
+    {
+        "label": "create_quality_mini",
+        "importPath": "jbi100_app.views.quality",
+        "description": "jbi100_app.views.quality",
+        "isExtraImport": true,
+        "detail": "jbi100_app.views.quality",
+        "documentation": {}
+    },
+    {
+        "label": "make_subplots",
+        "importPath": "plotly.subplots",
+        "description": "plotly.subplots",
+        "isExtraImport": true,
+        "detail": "plotly.subplots",
+        "documentation": {}
+    },
+    {
+        "label": "make_subplots",
+        "importPath": "plotly.subplots",
+        "description": "plotly.subplots",
+        "isExtraImport": true,
+        "detail": "plotly.subplots",
+        "documentation": {}
+    },
+    {
+        "label": "app",
+        "importPath": "jbi100_app.main",
+        "description": "jbi100_app.main",
+        "isExtraImport": true,
+        "detail": "jbi100_app.main",
+        "documentation": {}
+    },
+    {
+        "label": "create_layout",
+        "importPath": "jbi100_app.layout",
+        "description": "jbi100_app.layout",
+        "isExtraImport": true,
+        "detail": "jbi100_app.layout",
+        "documentation": {}
+    },
+    {
+        "label": "register_all_callbacks",
+        "importPath": "jbi100_app.callbacks",
+        "description": "jbi100_app.callbacks",
+        "isExtraImport": true,
+        "detail": "jbi100_app.callbacks",
+        "documentation": {}
+    },
+    {
+        "label": "bin_dir",
+        "kind": 5,
+        "importPath": ".venv.Scripts.activate_this",
+        "description": ".venv.Scripts.activate_this",
+        "peekOfCode": "bin_dir = os.path.dirname(abs_file)\nbase = bin_dir[: -len('Scripts') - 1]  # strip away the bin part from the __file__, plus the path separator\n# prepend bin to PATH (this file is inside the bin directory)\nos.environ[\"PATH\"] = os.pathsep.join([bin_dir, *os.environ.get(\"PATH\", \"\").split(os.pathsep)])\nos.environ[\"VIRTUAL_ENV\"] = base  # virtual env is right above bin directory\nos.environ[\"VIRTUAL_ENV_PROMPT\"] = '' or os.path.basename(base)\n# add the virtual environments libraries to the host python import mechanism\nprev_length = len(sys.path)\nfor lib in '..\\\\Lib\\\\site-packages'.split(os.pathsep):\n    path = os.path.realpath(os.path.join(bin_dir, lib))",
+        "detail": ".venv.Scripts.activate_this",
+        "documentation": {}
+    },
+    {
+        "label": "base",
+        "kind": 5,
+        "importPath": ".venv.Scripts.activate_this",
+        "description": ".venv.Scripts.activate_this",
+        "peekOfCode": "base = bin_dir[: -len('Scripts') - 1]  # strip away the bin part from the __file__, plus the path separator\n# prepend bin to PATH (this file is inside the bin directory)\nos.environ[\"PATH\"] = os.pathsep.join([bin_dir, *os.environ.get(\"PATH\", \"\").split(os.pathsep)])\nos.environ[\"VIRTUAL_ENV\"] = base  # virtual env is right above bin directory\nos.environ[\"VIRTUAL_ENV_PROMPT\"] = '' or os.path.basename(base)\n# add the virtual environments libraries to the host python import mechanism\nprev_length = len(sys.path)\nfor lib in '..\\\\Lib\\\\site-packages'.split(os.pathsep):\n    path = os.path.realpath(os.path.join(bin_dir, lib))\n    site.addsitedir(path.decode(\"utf-8\") if '' else path)",
+        "detail": ".venv.Scripts.activate_this",
+        "documentation": {}
+    },
+    {
+        "label": "os.environ[\"PATH\"]",
+        "kind": 5,
+        "importPath": ".venv.Scripts.activate_this",
+        "description": ".venv.Scripts.activate_this",
+        "peekOfCode": "os.environ[\"PATH\"] = os.pathsep.join([bin_dir, *os.environ.get(\"PATH\", \"\").split(os.pathsep)])\nos.environ[\"VIRTUAL_ENV\"] = base  # virtual env is right above bin directory\nos.environ[\"VIRTUAL_ENV_PROMPT\"] = '' or os.path.basename(base)\n# add the virtual environments libraries to the host python import mechanism\nprev_length = len(sys.path)\nfor lib in '..\\\\Lib\\\\site-packages'.split(os.pathsep):\n    path = os.path.realpath(os.path.join(bin_dir, lib))\n    site.addsitedir(path.decode(\"utf-8\") if '' else path)\nsys.path[:] = sys.path[prev_length:] + sys.path[0:prev_length]\nsys.real_prefix = sys.prefix",
+        "detail": ".venv.Scripts.activate_this",
+        "documentation": {}
+    },
+    {
+        "label": "os.environ[\"VIRTUAL_ENV\"]",
+        "kind": 5,
+        "importPath": ".venv.Scripts.activate_this",
+        "description": ".venv.Scripts.activate_this",
+        "peekOfCode": "os.environ[\"VIRTUAL_ENV\"] = base  # virtual env is right above bin directory\nos.environ[\"VIRTUAL_ENV_PROMPT\"] = '' or os.path.basename(base)\n# add the virtual environments libraries to the host python import mechanism\nprev_length = len(sys.path)\nfor lib in '..\\\\Lib\\\\site-packages'.split(os.pathsep):\n    path = os.path.realpath(os.path.join(bin_dir, lib))\n    site.addsitedir(path.decode(\"utf-8\") if '' else path)\nsys.path[:] = sys.path[prev_length:] + sys.path[0:prev_length]\nsys.real_prefix = sys.prefix\nsys.prefix = base",
+        "detail": ".venv.Scripts.activate_this",
+        "documentation": {}
+    },
+    {
+        "label": "os.environ[\"VIRTUAL_ENV_PROMPT\"]",
+        "kind": 5,
+        "importPath": ".venv.Scripts.activate_this",
+        "description": ".venv.Scripts.activate_this",
+        "peekOfCode": "os.environ[\"VIRTUAL_ENV_PROMPT\"] = '' or os.path.basename(base)\n# add the virtual environments libraries to the host python import mechanism\nprev_length = len(sys.path)\nfor lib in '..\\\\Lib\\\\site-packages'.split(os.pathsep):\n    path = os.path.realpath(os.path.join(bin_dir, lib))\n    site.addsitedir(path.decode(\"utf-8\") if '' else path)\nsys.path[:] = sys.path[prev_length:] + sys.path[0:prev_length]\nsys.real_prefix = sys.prefix\nsys.prefix = base",
+        "detail": ".venv.Scripts.activate_this",
+        "documentation": {}
+    },
+    {
+        "label": "prev_length",
+        "kind": 5,
+        "importPath": ".venv.Scripts.activate_this",
+        "description": ".venv.Scripts.activate_this",
+        "peekOfCode": "prev_length = len(sys.path)\nfor lib in '..\\\\Lib\\\\site-packages'.split(os.pathsep):\n    path = os.path.realpath(os.path.join(bin_dir, lib))\n    site.addsitedir(path.decode(\"utf-8\") if '' else path)\nsys.path[:] = sys.path[prev_length:] + sys.path[0:prev_length]\nsys.real_prefix = sys.prefix\nsys.prefix = base",
+        "detail": ".venv.Scripts.activate_this",
+        "documentation": {}
+    },
+    {
+        "label": "sys.path[:]",
+        "kind": 5,
+        "importPath": ".venv.Scripts.activate_this",
+        "description": ".venv.Scripts.activate_this",
+        "peekOfCode": "sys.path[:] = sys.path[prev_length:] + sys.path[0:prev_length]\nsys.real_prefix = sys.prefix\nsys.prefix = base",
+        "detail": ".venv.Scripts.activate_this",
+        "documentation": {}
+    },
+    {
+        "label": "sys.real_prefix",
+        "kind": 5,
+        "importPath": ".venv.Scripts.activate_this",
+        "description": ".venv.Scripts.activate_this",
+        "peekOfCode": "sys.real_prefix = sys.prefix\nsys.prefix = base",
+        "detail": ".venv.Scripts.activate_this",
+        "documentation": {}
+    },
+    {
+        "label": "sys.prefix",
+        "kind": 5,
+        "importPath": ".venv.Scripts.activate_this",
+        "description": ".venv.Scripts.activate_this",
+        "peekOfCode": "sys.prefix = base",
+        "detail": ".venv.Scripts.activate_this",
+        "documentation": {}
+    },
+    {
+        "label": "register_overview_callbacks",
+        "kind": 2,
+        "importPath": "jbi100_app.callbacks.overview_callbacks",
+        "description": "jbi100_app.callbacks.overview_callbacks",
+        "peekOfCode": "def register_overview_callbacks():\n    \"\"\"Register all overview widget callbacks.\"\"\"\n    @callback(\n        [Output(\"tooltip-content\", \"children\"),\n         Output(\"hover-highlight\", \"style\")],\n        [Input(\"overview-chart\", \"hoverData\")],\n        [State(\"week-data-store\", \"data\"), \n         State(\"dept-filter\", \"value\"), \n         State(\"current-week-range\", \"data\")],\n        prevent_initial_call=True",
+        "detail": "jbi100_app.callbacks.overview_callbacks",
+        "documentation": {}
+    },
+    {
+        "label": "_services_df",
+        "kind": 5,
+        "importPath": "jbi100_app.callbacks.overview_callbacks",
+        "description": "jbi100_app.callbacks.overview_callbacks",
+        "peekOfCode": "_services_df = get_services_data()\n# Cache for histogram bin data (computed once per dept selection)\n_HIST_CACHE = {}\ndef _get_cached_histogram_data(selected_depts, metric, hovered_dept=None):\n    \"\"\"Get or compute cached KDE data for a specific department.\"\"\"\n    from scipy import stats\n    # Cache per department (or merged if no hover)\n    dept_key = hovered_dept if hovered_dept else tuple(sorted(selected_depts or []))\n    cache_key = (dept_key, metric)\n    if cache_key not in _HIST_CACHE:",
+        "detail": "jbi100_app.callbacks.overview_callbacks",
+        "documentation": {}
+    },
+    {
+        "label": "_HIST_CACHE",
+        "kind": 5,
+        "importPath": "jbi100_app.callbacks.overview_callbacks",
+        "description": "jbi100_app.callbacks.overview_callbacks",
+        "peekOfCode": "_HIST_CACHE = {}\ndef _get_cached_histogram_data(selected_depts, metric, hovered_dept=None):\n    \"\"\"Get or compute cached KDE data for a specific department.\"\"\"\n    from scipy import stats\n    # Cache per department (or merged if no hover)\n    dept_key = hovered_dept if hovered_dept else tuple(sorted(selected_depts or []))\n    cache_key = (dept_key, metric)\n    if cache_key not in _HIST_CACHE:\n        # Filter by hovered department if provided\n        if hovered_dept:",
+        "detail": "jbi100_app.callbacks.overview_callbacks",
+        "documentation": {}
+    },
+    {
+        "label": "toggle_distribution_modal",
+        "kind": 2,
+        "importPath": "jbi100_app.callbacks.quantity_callbacks",
+        "description": "jbi100_app.callbacks.quantity_callbacks",
+        "peekOfCode": "def toggle_distribution_modal(show_clicks, close_clicks):\n    \"\"\"\n    Show/hide the bed distribution modal.\n    \"\"\"\n    from dash import callback_context\n    if not callback_context.triggered:\n        return {\"display\": \"none\"}\n    button_id = callback_context.triggered[0][\"prop_id\"].split(\".\")[0]\n    if button_id == \"show-distribution-btn\":\n        return {\"display\": \"flex\"}",
+        "detail": "jbi100_app.callbacks.quantity_callbacks",
+        "documentation": {}
+    },
+    {
+        "label": "update_distribution_chart",
+        "kind": 2,
+        "importPath": "jbi100_app.callbacks.quantity_callbacks",
+        "description": "jbi100_app.callbacks.quantity_callbacks",
+        "peekOfCode": "def update_distribution_chart(week_range, n_clicks):\n    \"\"\"\n    Q1: How are beds distributed across departments?\n    Simple horizontal bar chart showing bed allocation by department.\n    Always shows ALL departments regardless of filter.\n    \"\"\"\n    df = _filter_services(None, week_range)\n    if df.empty:\n        return _empty_fig(\"No data\")\n    agg = (",
+        "detail": "jbi100_app.callbacks.quantity_callbacks",
+        "documentation": {}
+    },
+    {
+        "label": "toggle_tab_visibility",
+        "kind": 2,
+        "importPath": "jbi100_app.callbacks.quantity_callbacks",
+        "description": "jbi100_app.callbacks.quantity_callbacks",
+        "peekOfCode": "def toggle_tab_visibility(active_tab):\n    if active_tab == \"tab-t2\":\n        return (\n            {\"display\": \"flex\", \"flexDirection\": \"column\", \"gap\": \"8px\", \"height\": \"100%\"},\n            {\"display\": \"none\"},\n        )\n    else:\n        return (\n            {\"display\": \"none\"},\n            {\"display\": \"flex\", \"flexDirection\": \"column\", \"gap\": \"6px\", \"height\": \"100%\"},",
+        "detail": "jbi100_app.callbacks.quantity_callbacks",
+        "documentation": {}
+    },
+    {
+        "label": "update_t2_weekly_bars",
+        "kind": 2,
+        "importPath": "jbi100_app.callbacks.quantity_callbacks",
+        "description": "jbi100_app.callbacks.quantity_callbacks",
+        "peekOfCode": "def update_t2_weekly_bars(selected_depts, week_range, active_tab, hide_anomalies):\n    if active_tab != \"tab-t2\":\n        raise PreventUpdate\n    df = _filter_services(selected_depts, week_range)\n    if df.empty:\n        return _empty_fig(\"No data\")\n    if hide_anomalies and \"hide\" in hide_anomalies:\n        anomaly_weeks = [w for w in range(3, 53, 3)]\n        df = df[~df[\"week\"].isin(anomaly_weeks)]\n        if df.empty:",
+        "detail": "jbi100_app.callbacks.quantity_callbacks",
+        "documentation": {}
+    },
+    {
+        "label": "update_t2_comparison",
+        "kind": 2,
+        "importPath": "jbi100_app.callbacks.quantity_callbacks",
+        "description": "jbi100_app.callbacks.quantity_callbacks",
+        "peekOfCode": "def update_t2_comparison(selected_depts, week_range, active_tab):\n    if active_tab != \"tab-t2\":\n        raise PreventUpdate\n    df = _filter_services(selected_depts, week_range)\n    if df.empty:\n        return _empty_fig(\"No data\"), \"No data\"\n    week_span = week_range[1] - week_range[0] + 1\n    agg = (\n        df.groupby(\"service\")\n        .agg(",
+        "detail": "jbi100_app.callbacks.quantity_callbacks",
+        "documentation": {}
+    },
+    {
+        "label": "update_t3_line",
+        "kind": 2,
+        "importPath": "jbi100_app.callbacks.quantity_callbacks",
+        "description": "jbi100_app.callbacks.quantity_callbacks",
+        "peekOfCode": "def update_t3_line(selected_depts, week_range, active_tab, los_relayout):\n    if active_tab != \"tab-t3\":\n        raise PreventUpdate\n    df = _filter_services(selected_depts, week_range)\n    if df.empty:\n        return _empty_fig(\"No data\")\n    df[\"occupancy_rate\"] = (df[\"patients_admitted\"] / df[\"available_beds\"] * 100).fillna(0)\n    zoomed_period = None\n    zoom_range = None\n    if los_relayout:",
+        "detail": "jbi100_app.callbacks.quantity_callbacks",
+        "documentation": {}
+    },
+    {
+        "label": "update_t3_violin",
+        "kind": 2,
+        "importPath": "jbi100_app.callbacks.quantity_callbacks",
+        "description": "jbi100_app.callbacks.quantity_callbacks",
+        "peekOfCode": "def update_t3_violin(selected_depts, week_range, active_tab, line_relayout):\n    if active_tab != \"tab-t3\":\n        raise PreventUpdate\n    df = _filter_patients(selected_depts, week_range)\n    if df.empty or \"length_of_stay\" not in df.columns or \"arrival_week\" not in df.columns:\n        return _empty_fig(\"No patient data\")\n    zoomed_period = None\n    zoom_range = None\n    if line_relayout:\n        if \"xaxis.range[0]\" in line_relayout:",
+        "detail": "jbi100_app.callbacks.quantity_callbacks",
+        "documentation": {}
+    },
+    {
+        "label": "update_t3_gantt",
+        "kind": 2,
+        "importPath": "jbi100_app.callbacks.quantity_callbacks",
+        "description": "jbi100_app.callbacks.quantity_callbacks",
+        "peekOfCode": "def update_t3_gantt(selected_depts, week_range, active_tab, line_relayout, current_children):\n    if active_tab != \"tab-t3\":\n        raise PreventUpdate\n    df = _filter_patients(selected_depts, week_range)\n    if df.empty or \"arrival_date\" not in df.columns:\n        return _empty_fig(\"No patient data\")\n    zoomed_period = None\n    if line_relayout:\n        if \"xaxis.range[0]\" in line_relayout:\n            try:",
+        "detail": "jbi100_app.callbacks.quantity_callbacks",
+        "documentation": {}
+    },
+    {
+        "label": "toggle_violin_gantt",
+        "kind": 2,
+        "importPath": "jbi100_app.callbacks.quantity_callbacks",
+        "description": "jbi100_app.callbacks.quantity_callbacks",
+        "peekOfCode": "def toggle_violin_gantt(n_clicks):\n    if n_clicks is None:\n        n_clicks = 0\n    if n_clicks % 2 == 0:\n        return (\n            dcc.Graph(id=\"t3-violin-chart\", config={\"displayModeBar\": True, \"displaylogo\": False},\n                      style={\"height\": \"100%\"}),\n            \"📅 Patient Timeline\",\n            {\n                \"padding\": \"5px 12px\",",
+        "detail": "jbi100_app.callbacks.quantity_callbacks",
+        "documentation": {}
+    },
+    {
+        "label": "register_quantity_callbacks",
+        "kind": 2,
+        "importPath": "jbi100_app.callbacks.quantity_callbacks",
+        "description": "jbi100_app.callbacks.quantity_callbacks",
+        "peekOfCode": "def register_quantity_callbacks():\n    pass",
+        "detail": "jbi100_app.callbacks.quantity_callbacks",
+        "documentation": {}
+    },
+    {
+        "label": "_services",
+        "kind": 5,
+        "importPath": "jbi100_app.callbacks.quantity_callbacks",
+        "description": "jbi100_app.callbacks.quantity_callbacks",
+        "peekOfCode": "_services = get_services_data()\n_patients = get_patients_data()\n# ==================================================================\n# HELPERS\n# ==================================================================\ndef _filter_services(selected_depts, week_range):\n    w0, w1 = int(week_range[0]), int(week_range[1])\n    df = _services[(_services[\"week\"] >= w0) & (_services[\"week\"] <= w1)].copy()\n    if selected_depts:\n        df = df[df[\"service\"].isin(selected_depts)]",
+        "detail": "jbi100_app.callbacks.quantity_callbacks",
+        "documentation": {}
+    },
+    {
+        "label": "_patients",
+        "kind": 5,
+        "importPath": "jbi100_app.callbacks.quantity_callbacks",
+        "description": "jbi100_app.callbacks.quantity_callbacks",
+        "peekOfCode": "_patients = get_patients_data()\n# ==================================================================\n# HELPERS\n# ==================================================================\ndef _filter_services(selected_depts, week_range):\n    w0, w1 = int(week_range[0]), int(week_range[1])\n    df = _services[(_services[\"week\"] >= w0) & (_services[\"week\"] <= w1)].copy()\n    if selected_depts:\n        df = df[df[\"service\"].isin(selected_depts)]\n    return df",
+        "detail": "jbi100_app.callbacks.quantity_callbacks",
+        "documentation": {}
+    },
+    {
+        "label": "register_sidebar_callbacks",
+        "kind": 2,
+        "importPath": "jbi100_app.callbacks.sidebar_callbacks",
+        "description": "jbi100_app.callbacks.sidebar_callbacks",
+        "peekOfCode": "def register_sidebar_callbacks():\n    \"\"\"Register all sidebar-related callbacks.\"\"\"\n    # =========================================================================\n    # SIDEBAR TOGGLE\n    # =========================================================================\n    @callback(\n        [Output(\"sidebar\", \"style\"),\n         Output(\"sidebar-content\", \"style\"),\n         Output(\"sidebar-title\", \"style\"),\n         Output(\"toggle-sidebar\", \"style\")],",
+        "detail": "jbi100_app.callbacks.sidebar_callbacks",
+        "documentation": {}
+    },
+    {
+        "label": "register_widget_callbacks",
+        "kind": 2,
+        "importPath": "jbi100_app.callbacks.widget_callbacks",
+        "description": "jbi100_app.callbacks.widget_callbacks",
+        "peekOfCode": "def register_widget_callbacks():\n    \"\"\"Register all widget management callbacks.\"\"\"\n    # =========================================================================\n    # WIDGET SWAP\n    # =========================================================================\n    @callback(\n        Output(\"expanded-widget\", \"data\"),\n        [Input(\"mini-slot-1\", \"n_clicks\"), Input(\"mini-slot-2\", \"n_clicks\")],\n        [State(\"expanded-widget\", \"data\")],\n        prevent_initial_call=True",
+        "detail": "jbi100_app.callbacks.widget_callbacks",
+        "documentation": {}
+    },
+    {
+        "label": "_services_df",
+        "kind": 5,
+        "importPath": "jbi100_app.callbacks.widget_callbacks",
+        "description": "jbi100_app.callbacks.widget_callbacks",
+        "peekOfCode": "_services_df = get_services_data()\n_patients_df = get_patients_data()\ndef register_widget_callbacks():\n    \"\"\"Register all widget management callbacks.\"\"\"\n    # =========================================================================\n    # WIDGET SWAP\n    # =========================================================================\n    @callback(\n        Output(\"expanded-widget\", \"data\"),\n        [Input(\"mini-slot-1\", \"n_clicks\"), Input(\"mini-slot-2\", \"n_clicks\")],",
+        "detail": "jbi100_app.callbacks.widget_callbacks",
+        "documentation": {}
+    },
+    {
+        "label": "_patients_df",
+        "kind": 5,
+        "importPath": "jbi100_app.callbacks.widget_callbacks",
+        "description": "jbi100_app.callbacks.widget_callbacks",
+        "peekOfCode": "_patients_df = get_patients_data()\ndef register_widget_callbacks():\n    \"\"\"Register all widget management callbacks.\"\"\"\n    # =========================================================================\n    # WIDGET SWAP\n    # =========================================================================\n    @callback(\n        Output(\"expanded-widget\", \"data\"),\n        [Input(\"mini-slot-1\", \"n_clicks\"), Input(\"mini-slot-2\", \"n_clicks\")],\n        [State(\"expanded-widget\", \"data\")],",
+        "detail": "jbi100_app.callbacks.widget_callbacks",
+        "documentation": {}
+    },
+    {
+        "label": "create_sidebar",
+        "kind": 2,
+        "importPath": "jbi100_app.views.menu",
+        "description": "jbi100_app.views.menu",
+        "peekOfCode": "def create_sidebar():\n    \"\"\"\n    Create the sidebar component with all controls.\n    Interaction justification (Yi et al. taxonomy):\n    - Filter: Department checkboxes, week range slider\n    - Select: Quick select buttons for time periods\n    - Abstract/Elaborate: Zoom level indicator shows semantic zoom state\n    \"\"\"\n    return html.Div(\n        id=\"sidebar\",",
+        "detail": "jbi100_app.views.menu",
+        "documentation": {}
+    },
+    {
+        "label": "get_sidebar_collapsed_style",
+        "kind": 2,
+        "importPath": "jbi100_app.views.menu",
+        "description": "jbi100_app.views.menu",
+        "peekOfCode": "def get_sidebar_collapsed_style():\n    \"\"\"Return style for collapsed sidebar.\"\"\"\n    return {\n        \"width\": \"50px\",\n        \"backgroundColor\": \"transparent\",\n        \"borderRight\": \"none\",\n        \"display\": \"flex\",\n        \"flexDirection\": \"column\",\n        \"transition\": \"width 0.3s ease\",\n        \"overflow\": \"hidden\",",
+        "detail": "jbi100_app.views.menu",
+        "documentation": {}
+    },
+    {
+        "label": "get_sidebar_expanded_style",
+        "kind": 2,
+        "importPath": "jbi100_app.views.menu",
+        "description": "jbi100_app.views.menu",
+        "peekOfCode": "def get_sidebar_expanded_style():\n    \"\"\"Return style for expanded sidebar.\"\"\"\n    return {\n        \"width\": \"240px\",\n        \"backgroundColor\": \"#f8f9fa\",\n        \"display\": \"flex\",\n        \"flexDirection\": \"column\",\n        \"transition\": \"width 0.3s ease\",\n        \"overflow\": \"hidden\",\n        \"flexShrink\": \"0\",",
+        "detail": "jbi100_app.views.menu",
+        "documentation": {}
+    },
+    {
+        "label": "get_zoom_level",
+        "kind": 2,
+        "importPath": "jbi100_app.views.overview",
+        "description": "jbi100_app.views.overview",
+        "peekOfCode": "def get_zoom_level(week_range):\n    \"\"\"Determine zoom level for semantic zoom.\"\"\"\n    span = week_range[1] - week_range[0] + 1\n    if span <= ZOOM_THRESHOLDS[\"detail\"]:\n        return \"detail\"\n    elif span <= ZOOM_THRESHOLDS[\"quarter\"]:\n        return \"quarter\"\n    else:\n        return \"overview\"\ndef create_overview_charts(df, selected_depts, week_range, show_events=True, hide_anomalies=False):",
+        "detail": "jbi100_app.views.overview",
+        "documentation": {}
+    },
+    {
+        "label": "create_overview_charts",
+        "kind": 2,
+        "importPath": "jbi100_app.views.overview",
+        "description": "jbi100_app.views.overview",
+        "peekOfCode": "def create_overview_charts(df, selected_depts, week_range, show_events=True, hide_anomalies=False):\n    \"\"\"Create the main overview visualization with threshold lines and event markers.\n    Args:\n        show_events: If True, display event markers (default: True)\n        hide_anomalies: If True, filter out weeks with no staff assigned (default: False)\n    \"\"\"\n    week_min, week_max = week_range\n    zoom_level = get_zoom_level(week_range)\n    # Filter out anomaly weeks if requested\n    # Anomaly = weeks where NO staff members were assigned (present=0 for all staff)",
+        "detail": "jbi100_app.views.overview",
+        "documentation": {}
+    },
+    {
+        "label": "create_histogram",
+        "kind": 2,
+        "importPath": "jbi100_app.views.overview",
+        "description": "jbi100_app.views.overview",
+        "peekOfCode": "def create_histogram(df, selected_depts, metric, highlight_value=None, hovered_dept=None):\n    \"\"\"\n    Create KDE (Kernel Density Estimate) for hovered department.\n    Args:\n        hovered_dept: If provided, show KDE for this specific department only\n                     (details-on-demand interaction pattern)\n    \"\"\"\n    # Use hovered department if provided, otherwise merge all selected\n    if hovered_dept:\n        filtered = df[df[\"service\"] == hovered_dept]",
+        "detail": "jbi100_app.views.overview",
+        "documentation": {}
+    },
+    {
+        "label": "create_event_strip",
+        "kind": 2,
+        "importPath": "jbi100_app.views.overview",
+        "description": "jbi100_app.views.overview",
+        "peekOfCode": "def create_event_strip(events_by_week, week_range):\n    \"\"\"Create a horizontal strip showing events between the two plots.\"\"\"\n    week_min, week_max = week_range\n    if not events_by_week:\n        return html.Div(style={\"height\": \"20px\"})\n    # Create event markers positioned by week\n    total_weeks = week_max - week_min + 1\n    event_elements = []\n    for week, events in events_by_week.items():\n        # Calculate position as percentage",
+        "detail": "jbi100_app.views.overview",
+        "documentation": {}
+    },
+    {
+        "label": "create_overview_expanded",
+        "kind": 2,
+        "importPath": "jbi100_app.views.overview",
+        "description": "jbi100_app.views.overview",
+        "peekOfCode": "def create_overview_expanded(df, selected_depts, week_range, show_events=True, hide_anomalies=False):\n    \"\"\"Create the expanded overview widget layout with event strip between plots.\n    Args:\n        show_events: If True, display event markers\n        hide_anomalies: If True, filter out anomaly weeks\n    \"\"\"\n    info = WIDGET_INFO[\"overview\"]\n    zoom_level = get_zoom_level(week_range)\n    # Create color legend for selected departments\n    legend_items = []",
+        "detail": "jbi100_app.views.overview",
+        "documentation": {}
+    },
+    {
+        "label": "create_overview_mini_lines",
+        "kind": 2,
+        "importPath": "jbi100_app.views.overview",
+        "description": "jbi100_app.views.overview",
+        "peekOfCode": "def create_overview_mini_lines(df, selected_depts, week_range):\n    \"\"\"Create mini line chart showing satisfaction per department.\"\"\"\n    week_min, week_max = week_range\n    filtered = df[(df[\"week\"] >= week_min) & (df[\"week\"] <= week_max)]\n    if selected_depts:\n        filtered = filtered[filtered[\"service\"].isin(selected_depts)]\n    fig = go.Figure()\n    for dept in (selected_depts or []):\n        dept_data = filtered[filtered[\"service\"] == dept].sort_values(\"week\")\n        fig.add_trace(go.Scatter(",
+        "detail": "jbi100_app.views.overview",
+        "documentation": {}
+    },
+    {
+        "label": "create_overview_mini",
+        "kind": 2,
+        "importPath": "jbi100_app.views.overview",
+        "description": "jbi100_app.views.overview",
+        "peekOfCode": "def create_overview_mini(df, selected_depts, week_range):\n    \"\"\"Create the mini overview widget card.\"\"\"\n    info = WIDGET_INFO[\"overview\"]\n    week_min, week_max = week_range\n    dept_count = len(selected_depts) if selected_depts else 0\n    filter_text = f\"Weeks {week_min}-{week_max} · {dept_count} dept{'s' if dept_count != 1 else ''}\"\n    legend_items = [\n        html.Span([\n            html.Span(\"━ \", style={\"color\": DEPT_COLORS.get(dept, \"#999\"), \"fontWeight\": \"bold\"}),\n            html.Span(DEPT_LABELS_SHORT.get(dept, dept), style={\"color\": \"#555\", \"marginRight\": \"8px\"})",
+        "detail": "jbi100_app.views.overview",
+        "documentation": {}
+    },
+    {
+        "label": "build_tooltip_content",
+        "kind": 2,
+        "importPath": "jbi100_app.views.overview",
+        "description": "jbi100_app.views.overview",
+        "peekOfCode": "def build_tooltip_content(week, week_data, selected_depts, df, week_range):\n    \"\"\"Build tooltip content for hover display.\"\"\"\n    week_rows = df[df[\"week\"] == week]\n    events_this_week = []\n    for _, row in week_rows.iterrows():\n        if row[\"event\"] != \"none\" and row[\"service\"] in selected_depts:\n            events_this_week.append({\n                \"event\": row[\"event\"],\n                \"dept\": row[\"service\"]\n            })",
+        "detail": "jbi100_app.views.overview",
+        "documentation": {}
+    },
+    {
+        "label": "create_pcp",
+        "kind": 2,
+        "importPath": "jbi100_app.views.quality",
+        "description": "jbi100_app.views.quality",
+        "peekOfCode": "def create_pcp(df, selected_depts):\n    \"\"\"\n    Create Parallel Coordinates Plot for multivariate analysis.\n    Theoretical justification (Munzner M5_01):\n    - Shows relationships between multiple quantitative attributes\n    - Patterns: parallel lines = positive correlation, crossing = negative\n    - Supports brushing on axes for filtering\n    Args:\n        df: Services dataframe\n        selected_depts: List of department IDs",
+        "detail": "jbi100_app.views.quality",
+        "documentation": {}
+    },
+    {
+        "label": "create_correlation_matrix",
+        "kind": 2,
+        "importPath": "jbi100_app.views.quality",
+        "description": "jbi100_app.views.quality",
+        "peekOfCode": "def create_correlation_matrix(df):\n    \"\"\"\n    Create correlation matrix heatmap.\n    Args:\n        df: Services dataframe\n    Returns:\n        plotly.graph_objects.Figure\n    \"\"\"\n    cols = [\"available_beds\", \"patients_admitted\", \"patients_refused\", \n            \"patient_satisfaction\", \"staff_morale\"]",
+        "detail": "jbi100_app.views.quality",
+        "documentation": {}
+    },
+    {
+        "label": "create_quality_expanded",
+        "kind": 2,
+        "importPath": "jbi100_app.views.quality",
+        "description": "jbi100_app.views.quality",
+        "peekOfCode": "def create_quality_expanded(services_df, selected_depts, week_range):\n    \"\"\"\n    Create the expanded quality widget layout.\n    Args:\n        services_df: Services dataframe\n        selected_depts: List of department IDs\n        week_range: tuple of (start_week, end_week)\n    Returns:\n        dash.html.Div component\n    \"\"\"",
+        "detail": "jbi100_app.views.quality",
+        "documentation": {}
+    },
+    {
+        "label": "create_quality_mini",
+        "kind": 2,
+        "importPath": "jbi100_app.views.quality",
+        "description": "jbi100_app.views.quality",
+        "peekOfCode": "def create_quality_mini(services_df, selected_depts, week_range):\n    \"\"\"\n    Create the mini quality widget card.\n    Args:\n        services_df: Services dataframe\n        selected_depts: List of department IDs\n        week_range: tuple of (start_week, end_week)\n    Returns:\n        dash.html.Div component\n    \"\"\"",
+        "detail": "jbi100_app.views.quality",
+        "documentation": {}
+    },
+    {
+        "label": "create_quantity_expanded",
+        "kind": 2,
+        "importPath": "jbi100_app.views.quantity",
+        "description": "jbi100_app.views.quantity",
+        "peekOfCode": "def create_quantity_expanded(services_df, patients_df, selected_depts, week_range):\n    info = WIDGET_INFO[\"quantity\"]\n    header = html.Div(\n        style={\"paddingBottom\": \"8px\", \"marginBottom\": \"8px\", \"borderBottom\": \"2px solid #e8e8e8\", \"flexShrink\": \"0\"},\n        children=[\n            html.H4(f\"{info['icon']} {info['title']}\", style={\"margin\": \"0\", \"color\": \"#2c3e50\", \"fontWeight\": \"600\", \"fontSize\": \"15px\"}),\n            html.P(info[\"subtitle\"], style={\"margin\": \"0\", \"fontSize\": \"11px\", \"color\": \"#7f8c8d\"})\n        ],\n    )\n    tabs = dcc.Tabs(",
+        "detail": "jbi100_app.views.quantity",
+        "documentation": {}
+    },
+    {
+        "label": "create_quantity_mini",
+        "kind": 2,
+        "importPath": "jbi100_app.views.quantity",
+        "description": "jbi100_app.views.quantity",
+        "peekOfCode": "def create_quantity_mini(services_df, selected_depts, week_range):\n    info = WIDGET_INFO[\"quantity\"]\n    week_min, week_max = week_range\n    df = services_df[(services_df[\"week\"] >= week_min) & (services_df[\"week\"] <= week_max)].copy()\n    if selected_depts:\n        df = df[df[\"service\"].isin(selected_depts)].copy()\n    total_refused = int(df[\"patients_refused\"].sum()) if len(df) > 0 else 0\n    avg_util = float(df[\"utilization_rate\"].mean()) if len(df) > 0 else 0.0\n    return html.Div(style={\"height\": \"100%\", \"display\": \"flex\", \"flexDirection\": \"column\"}, children=[\n        html.Div(f\"{info['icon']} {info['title']}\", style={\"fontWeight\": \"600\", \"fontSize\": \"14px\", \"marginBottom\": \"5px\", \"color\": \"#2c3e50\"}),",
+        "detail": "jbi100_app.views.quantity",
+        "documentation": {}
+    },
+    {
+        "label": "SERVICES",
+        "kind": 5,
+        "importPath": "jbi100_app.config",
+        "description": "jbi100_app.config",
+        "peekOfCode": "SERVICES = [\"emergency\", \"surgery\", \"general_medicine\", \"ICU\"]\n# Color palette for departments (consistent across all views)\n# Justification: Colorblind-safe categorical palette (Okabe-Ito + Wong)\n# Avoids red-green confusion (Munzner Ch. 10, theory line 287)\nDEPT_COLORS = {\n    \"emergency\": \"#E69F00\",        # Orange - urgency, high visibility\n    \"surgery\": \"#0072B2\",          # Blue - clinical/sterile\n    \"general_medicine\": \"#009E73\", # Teal - health/wellness\n    \"ICU\": \"#CC79A7\"               # Rose - intensive/critical\n}",
+        "detail": "jbi100_app.config",
+        "documentation": {}
+    },
+    {
+        "label": "DEPT_COLORS",
+        "kind": 5,
+        "importPath": "jbi100_app.config",
+        "description": "jbi100_app.config",
+        "peekOfCode": "DEPT_COLORS = {\n    \"emergency\": \"#E69F00\",        # Orange - urgency, high visibility\n    \"surgery\": \"#0072B2\",          # Blue - clinical/sterile\n    \"general_medicine\": \"#009E73\", # Teal - health/wellness\n    \"ICU\": \"#CC79A7\"               # Rose - intensive/critical\n}\nDEPT_LABELS = {\n    \"emergency\": \"Emergency\",\n    \"surgery\": \"Surgery\", \n    \"general_medicine\": \"General Medicine\",",
+        "detail": "jbi100_app.config",
+        "documentation": {}
+    },
+    {
+        "label": "DEPT_LABELS",
+        "kind": 5,
+        "importPath": "jbi100_app.config",
+        "description": "jbi100_app.config",
+        "peekOfCode": "DEPT_LABELS = {\n    \"emergency\": \"Emergency\",\n    \"surgery\": \"Surgery\", \n    \"general_medicine\": \"General Medicine\",\n    \"ICU\": \"ICU\"\n}\n# Short labels for compact displays\nDEPT_LABELS_SHORT = {\n    \"emergency\": \"Emerg.\",\n    \"surgery\": \"Surgery\",",
+        "detail": "jbi100_app.config",
+        "documentation": {}
+    },
+    {
+        "label": "DEPT_LABELS_SHORT",
+        "kind": 5,
+        "importPath": "jbi100_app.config",
+        "description": "jbi100_app.config",
+        "peekOfCode": "DEPT_LABELS_SHORT = {\n    \"emergency\": \"Emerg.\",\n    \"surgery\": \"Surgery\",\n    \"general_medicine\": \"Gen.Med\",\n    \"ICU\": \"ICU\"\n}\n# =============================================================================\n# EVENT CONFIGURATION\n# =============================================================================\n# Colorblind-safe event colors (distinct from dept colors)",
+        "detail": "jbi100_app.config",
+        "documentation": {}
+    },
+    {
+        "label": "EVENT_COLORS",
+        "kind": 5,
+        "importPath": "jbi100_app.config",
+        "description": "jbi100_app.config",
+        "peekOfCode": "EVENT_COLORS = {\n    \"flu\": \"#D55E00\",      # Vermillion - alert\n    \"donation\": \"#009E73\", # Teal - positive\n    \"holiday\": \"#CC79A7\",  # Rose - special occasion\n    \"training\": \"#F0E442\"  # Yellow - learning\n}\nEVENT_ICONS = {\n    \"flu\": \"🤒\",\n    \"donation\": \"💝\",\n    \"holiday\": \"🎄\", ",
+        "detail": "jbi100_app.config",
+        "documentation": {}
+    },
+    {
+        "label": "EVENT_ICONS",
+        "kind": 5,
+        "importPath": "jbi100_app.config",
+        "description": "jbi100_app.config",
+        "peekOfCode": "EVENT_ICONS = {\n    \"flu\": \"🤒\",\n    \"donation\": \"💝\",\n    \"holiday\": \"🎄\", \n    \"training\": \"📚\"\n}\n# =============================================================================\n# SEMANTIC COLORS\n# =============================================================================\n# Colorblind-safe semantic colors",
+        "detail": "jbi100_app.config",
+        "documentation": {}
+    },
+    {
+        "label": "SEMANTIC_COLORS",
+        "kind": 5,
+        "importPath": "jbi100_app.config",
+        "description": "jbi100_app.config",
+        "peekOfCode": "SEMANTIC_COLORS = {\n    \"good\": \"#009E73\",     # Teal (not pure green)\n    \"warning\": \"#F0E442\",  # Yellow\n    \"bad\": \"#D55E00\",      # Vermillion (not pure red)\n    \"neutral\": \"#999999\",  # Gray\n    \"primary\": \"#0072B2\",  # Blue\n    # Threshold-specific (luminance-based hierarchy)\n    \"threshold_mean\": \"#56B4E9\",    # Sky blue - central tendency\n    \"threshold_upper\": \"#000000\",   # Black - limit (dark = constraint)\n    \"threshold_lower\": \"#000000\"    # Black - limit (redundant with dash)",
+        "detail": "jbi100_app.config",
+        "documentation": {}
+    },
+    {
+        "label": "WIDGET_INFO",
+        "kind": 5,
+        "importPath": "jbi100_app.config",
+        "description": "jbi100_app.config",
+        "peekOfCode": "WIDGET_INFO = {\n    \"overview\": {\n        \"icon\": \"📊\",\n        \"title\": \"Hospital Performance Overview\",\n        \"subtitle\": \"T1: Browse trends and identify outliers\"\n    },\n    \"quantity\": {\n        \"icon\": \"📦\",\n        \"title\": \"Capacity & Patient Flow\",\n        \"subtitle\": \"T2: Bed allocation | T3: Stay duration\"",
+        "detail": "jbi100_app.config",
+        "documentation": {}
+    },
+    {
+        "label": "ZOOM_THRESHOLDS",
+        "kind": 5,
+        "importPath": "jbi100_app.config",
+        "description": "jbi100_app.config",
+        "peekOfCode": "ZOOM_THRESHOLDS = {\n    \"detail\": 8,    # ≤8 weeks: Individual data points visible\n    \"quarter\": 13   # ≤13 weeks: True quarter (52/4), shows distributions\n    # >13 weeks: Overview mode\n}\n# =============================================================================\n# CHART DEFAULTS\n# =============================================================================\nCHART_CONFIG = {\n    \"displayModeBar\": False",
+        "detail": "jbi100_app.config",
+        "documentation": {}
+    },
+    {
+        "label": "CHART_CONFIG",
+        "kind": 5,
+        "importPath": "jbi100_app.config",
+        "description": "jbi100_app.config",
+        "peekOfCode": "CHART_CONFIG = {\n    \"displayModeBar\": False\n}\nCHART_MARGINS = {\n    \"overview\": dict(l=60, r=20, t=40, b=60),\n    \"default\": dict(l=50, r=20, t=30, b=40)\n}",
+        "detail": "jbi100_app.config",
+        "documentation": {}
+    },
+    {
+        "label": "CHART_MARGINS",
+        "kind": 5,
+        "importPath": "jbi100_app.config",
+        "description": "jbi100_app.config",
+        "peekOfCode": "CHART_MARGINS = {\n    \"overview\": dict(l=60, r=20, t=40, b=60),\n    \"default\": dict(l=50, r=20, t=30, b=40)\n}",
+        "detail": "jbi100_app.config",
+        "documentation": {}
+    },
+    {
+        "label": "load_services_weekly",
+        "kind": 2,
+        "importPath": "jbi100_app.data",
+        "description": "jbi100_app.data",
+        "peekOfCode": "def load_services_weekly():\n    \"\"\"Load weekly service metrics data.\"\"\"\n    return pd.read_csv(os.path.join(DATA_PATH, \"services_weekly.csv\"))\ndef load_patients():\n    \"\"\"Load patient records data.\"\"\"\n    return pd.read_csv(os.path.join(DATA_PATH, \"patients.csv\"))\ndef load_staff():\n    \"\"\"Load staff information.\"\"\"\n    return pd.read_csv(os.path.join(DATA_PATH, \"staff.csv\"))\ndef load_staff_schedule():",
+        "detail": "jbi100_app.data",
+        "documentation": {}
+    },
+    {
+        "label": "load_patients",
+        "kind": 2,
+        "importPath": "jbi100_app.data",
+        "description": "jbi100_app.data",
+        "peekOfCode": "def load_patients():\n    \"\"\"Load patient records data.\"\"\"\n    return pd.read_csv(os.path.join(DATA_PATH, \"patients.csv\"))\ndef load_staff():\n    \"\"\"Load staff information.\"\"\"\n    return pd.read_csv(os.path.join(DATA_PATH, \"staff.csv\"))\ndef load_staff_schedule():\n    \"\"\"Load staff schedule data.\"\"\"\n    return pd.read_csv(os.path.join(DATA_PATH, \"staff_schedule.csv\"))\ndef get_services_data():",
+        "detail": "jbi100_app.data",
+        "documentation": {}
+    },
+    {
+        "label": "load_staff",
+        "kind": 2,
+        "importPath": "jbi100_app.data",
+        "description": "jbi100_app.data",
+        "peekOfCode": "def load_staff():\n    \"\"\"Load staff information.\"\"\"\n    return pd.read_csv(os.path.join(DATA_PATH, \"staff.csv\"))\ndef load_staff_schedule():\n    \"\"\"Load staff schedule data.\"\"\"\n    return pd.read_csv(os.path.join(DATA_PATH, \"staff_schedule.csv\"))\ndef get_services_data():\n    \"\"\"\n    Load and preprocess services data with derived metrics.\n    Returns:",
+        "detail": "jbi100_app.data",
+        "documentation": {}
+    },
+    {
+        "label": "load_staff_schedule",
+        "kind": 2,
+        "importPath": "jbi100_app.data",
+        "description": "jbi100_app.data",
+        "peekOfCode": "def load_staff_schedule():\n    \"\"\"Load staff schedule data.\"\"\"\n    return pd.read_csv(os.path.join(DATA_PATH, \"staff_schedule.csv\"))\ndef get_services_data():\n    \"\"\"\n    Load and preprocess services data with derived metrics.\n    Returns:\n        pd.DataFrame: Services data with additional computed columns\n    \"\"\"\n    df = load_services_weekly()",
+        "detail": "jbi100_app.data",
+        "documentation": {}
+    },
+    {
+        "label": "get_services_data",
+        "kind": 2,
+        "importPath": "jbi100_app.data",
+        "description": "jbi100_app.data",
+        "peekOfCode": "def get_services_data():\n    \"\"\"\n    Load and preprocess services data with derived metrics.\n    Returns:\n        pd.DataFrame: Services data with additional computed columns\n    \"\"\"\n    df = load_services_weekly()\n    # Acceptance rate - use pre-computed if exists, else compute\n    if \"acceptance_rate\" not in df.columns:\n        df[\"acceptance_rate\"] = (",
+        "detail": "jbi100_app.data",
+        "documentation": {}
+    },
+    {
+        "label": "get_patients_data",
+        "kind": 2,
+        "importPath": "jbi100_app.data",
+        "description": "jbi100_app.data",
+        "peekOfCode": "def get_patients_data():\n    \"\"\"\n    Load and preprocess patient data with derived metrics.\n    Returns:\n        pd.DataFrame: Patient data with additional computed columns\n    \"\"\"\n    df = load_patients()\n    # Convert dates\n    df[\"arrival_date\"] = pd.to_datetime(df[\"arrival_date\"])\n    df[\"departure_date\"] = pd.to_datetime(df[\"departure_date\"])",
+        "detail": "jbi100_app.data",
+        "documentation": {}
+    },
+    {
+        "label": "get_all_data",
+        "kind": 2,
+        "importPath": "jbi100_app.data",
+        "description": "jbi100_app.data",
+        "peekOfCode": "def get_all_data():\n    \"\"\"\n    Load all datasets with preprocessing.\n    Returns:\n        tuple: (services_df, patients_df, staff_df, schedule_df)\n    \"\"\"\n    services = get_services_data()\n    patients = get_patients_data()\n    staff = load_staff()\n    schedule = load_staff_schedule()",
+        "detail": "jbi100_app.data",
+        "documentation": {}
+    },
+    {
+        "label": "build_week_data_store",
+        "kind": 2,
+        "importPath": "jbi100_app.data",
+        "description": "jbi100_app.data",
+        "peekOfCode": "def build_week_data_store(df):\n    \"\"\"\n    Build a dictionary of week data for client-side access.\n    Used for fast tooltip lookups.\n    Args:\n        df: Services dataframe\n    Returns:\n        dict: Nested dict {week: {service: {metric: value}}}\n    \"\"\"\n    data_store = {}",
+        "detail": "jbi100_app.data",
+        "documentation": {}
+    },
+    {
+        "label": "DATA_PATH",
+        "kind": 5,
+        "importPath": "jbi100_app.data",
+        "description": "jbi100_app.data",
+        "peekOfCode": "DATA_PATH = os.path.join(os.path.dirname(__file__), \"data\")\ndef load_services_weekly():\n    \"\"\"Load weekly service metrics data.\"\"\"\n    return pd.read_csv(os.path.join(DATA_PATH, \"services_weekly.csv\"))\ndef load_patients():\n    \"\"\"Load patient records data.\"\"\"\n    return pd.read_csv(os.path.join(DATA_PATH, \"patients.csv\"))\ndef load_staff():\n    \"\"\"Load staff information.\"\"\"\n    return pd.read_csv(os.path.join(DATA_PATH, \"staff.csv\"))",
+        "detail": "jbi100_app.data",
+        "documentation": {}
+    },
+    {
+        "label": "create_layout",
+        "kind": 2,
+        "importPath": "jbi100_app.layout",
+        "description": "jbi100_app.layout",
+        "peekOfCode": "def create_layout():\n    \"\"\"\n    Create the main dashboard layout.\n    Layout structure:\n    ┌──────────┬────────────────────────────────────────────┐\n    │          │         MAIN WIDGET (70% height)           │\n    │ SIDEBAR  │         id=\"main-widget-area\"              │\n    │          ├─────────────────────┬──────────────────────┤\n    │          │  MINI 1 (30%)       │  MINI 2 (30%)        │\n    │          │  id=\"mini-slot-1\"   │  id=\"mini-slot-2\"    │",
+        "detail": "jbi100_app.layout",
+        "documentation": {}
+    },
+    {
+        "label": "app",
+        "kind": 5,
+        "importPath": "jbi100_app.main",
+        "description": "jbi100_app.main",
+        "peekOfCode": "app = Dash(__name__, suppress_callback_exceptions=True)\napp.title = \"Hospital Operations Dashboard\"\n# Server reference for deployment\nserver = app.server",
+        "detail": "jbi100_app.main",
+        "documentation": {}
+    },
+    {
+        "label": "app.title",
+        "kind": 5,
+        "importPath": "jbi100_app.main",
+        "description": "jbi100_app.main",
+        "peekOfCode": "app.title = \"Hospital Operations Dashboard\"\n# Server reference for deployment\nserver = app.server",
+        "detail": "jbi100_app.main",
+        "documentation": {}
+    },
+    {
+        "label": "server",
+        "kind": 5,
+        "importPath": "jbi100_app.main",
+        "description": "jbi100_app.main",
+        "peekOfCode": "server = app.server",
+        "detail": "jbi100_app.main",
+        "documentation": {}
+    },
+    {
+        "label": "app.layout",
+        "kind": 5,
+        "importPath": "app",
+        "description": "app",
+        "peekOfCode": "app.layout = create_layout()\n# Register all callbacks\nregister_all_callbacks()\n# =============================================================================\n# RUN\n# =============================================================================\nif __name__ == \"__main__\":\n    app.run(debug=True, port=8050)",
+        "detail": "app",
+        "documentation": {}
+    },
+    {
+        "label": "create_overview_charts",
+        "kind": 2,
+        "importPath": "app_main_OLD",
+        "description": "app_main_OLD",
+        "peekOfCode": "def create_overview_charts(selected_depts, week_range):\n    week_min, week_max = week_range\n    fig = make_subplots(rows=2, cols=1, shared_xaxes=True, vertical_spacing=0.18, subplot_titles=(\"Patient Satisfaction by Department\", \"Acceptance Rate by Department\"))\n    for dept in selected_depts:\n        # Load ALL data, not filtered by week_range\n        dept_data = df[df[\"service\"] == dept].sort_values(\"week\")\n        fig.add_trace(go.Scatter(x=dept_data[\"week\"], y=dept_data[\"patient_satisfaction\"], name=DEPT_LABELS[dept], line=dict(color=DEPT_COLORS[dept], width=2), mode=\"lines+markers\", marker=dict(size=5, color=DEPT_COLORS[dept]), hoverinfo=\"none\", legendgroup=dept), row=1, col=1)\n        fig.add_trace(go.Scatter(x=dept_data[\"week\"], y=dept_data[\"acceptance_rate\"], name=DEPT_LABELS[dept], line=dict(color=DEPT_COLORS[dept], width=2), mode=\"lines+markers\", marker=dict(size=5, color=DEPT_COLORS[dept]), hoverinfo=\"none\", legendgroup=dept, showlegend=False), row=2, col=1)\n    fig.update_layout(\n        height=450, ",
+        "detail": "app_main_OLD",
+        "documentation": {}
+    },
+    {
+        "label": "make_main_widget",
+        "kind": 2,
+        "importPath": "app_main_OLD",
+        "description": "app_main_OLD",
+        "peekOfCode": "def make_main_widget(name, selected_depts, week_range):\n    info = WIDGET_INFO[name]\n    header = html.Div(style={\"paddingBottom\": \"8px\", \"marginBottom\": \"10px\", \"borderBottom\": \"2px solid #eee\", \"flexShrink\": \"0\"}, children=[\n        html.H4(f\"{info['icon']} {info['title']}\", style={\"margin\": \"0\", \"color\": \"#2c3e50\", \"fontWeight\": \"500\"}),\n        html.Span(info[\"subtitle\"], style={\"fontSize\": \"12px\", \"color\": \"#999\"})\n    ])\n    if name == \"overview\" and selected_depts:\n        content = html.Div(style={\"flex\": \"1\", \"display\": \"flex\", \"gap\": \"12px\", \"minHeight\": \"0\"}, children=[\n            html.Div(id=\"chart-container\", style={\"flex\": \"1\", \"position\": \"relative\", \"minWidth\": \"0\"}, children=[\n                dcc.Graph(id=\"overview-chart\", figure=create_overview_charts(selected_depts, week_range), style={\"height\": \"100%\", \"width\": \"100%\"}, config={\"displayModeBar\": False}),",
+        "detail": "app_main_OLD",
+        "documentation": {}
+    },
+    {
+        "label": "make_mini_widget",
+        "kind": 2,
+        "importPath": "app_main_OLD",
+        "description": "app_main_OLD",
+        "peekOfCode": "def make_mini_widget(name):\n    info = WIDGET_INFO[name]\n    return html.Div(style={\"height\": \"100%\", \"display\": \"flex\", \"flexDirection\": \"column\"}, children=[\n        html.Div(f\"{info['icon']} {info['title']}\", style={\"fontWeight\": \"600\", \"fontSize\": \"14px\", \"marginBottom\": \"5px\", \"color\": \"#2c3e50\"}),\n        html.Div(info[\"subtitle\"], style={\"fontSize\": \"11px\", \"color\": \"#999\", \"marginBottom\": \"8px\"}),\n        html.Div(style={\"flex\": \"1\", \"backgroundColor\": \"#f8f9fa\", \"borderRadius\": \"6px\", \"display\": \"flex\", \"alignItems\": \"center\", \"justifyContent\": \"center\", \"color\": \"#ccc\", \"fontSize\": \"12px\"}, children=[\"[ Mini charts here ]\"]),\n        html.Div(\"↑ Click to expand\", style={\"fontSize\": \"11px\", \"color\": \"#3498db\", \"fontWeight\": \"500\", \"marginTop\": \"8px\", \"textAlign\": \"center\"})\n    ])\n# Layout\napp.layout = html.Div(style={\"display\": \"flex\", \"height\": \"100vh\", \"backgroundColor\": \"#f5f6fa\", \"fontFamily\": \"Segoe UI, Arial, sans-serif\", \"overflow\": \"hidden\"}, children=[",
+        "detail": "app_main_OLD",
+        "documentation": {}
+    },
+    {
+        "label": "update_hover",
+        "kind": 2,
+        "importPath": "app_main_OLD",
+        "description": "app_main_OLD",
+        "peekOfCode": "def update_hover(hoverData, weekData, selectedDepts, weekRange):\n    base_style = {\"position\": \"absolute\", \"top\": \"15px\", \"bottom\": \"25px\", \"width\": \"14px\", \"backgroundColor\": \"rgba(52, 152, 219, 0.2)\", \"pointerEvents\": \"none\", \"borderRadius\": \"3px\"}\n    default_tooltip = [html.Div(\"Hover over\", style={\"color\": \"#999\", \"textAlign\": \"center\"}), html.Div(\"the chart\", style={\"color\": \"#999\", \"textAlign\": \"center\"})]\n    if not hoverData or not hoverData.get(\"points\"):\n        return default_tooltip, {**base_style, \"display\": \"none\", \"left\": \"60px\"}\n    point = hoverData[\"points\"][0]\n    week = round(point[\"x\"])\n    weekMin, weekMax = weekRange\n    if week < weekMin or week > weekMax:\n        return default_tooltip, {**base_style, \"display\": \"none\", \"left\": \"60px\"}",
+        "detail": "app_main_OLD",
+        "documentation": {}
+    },
+    {
+        "label": "toggle_sidebar",
+        "kind": 2,
+        "importPath": "app_main_OLD",
+        "description": "app_main_OLD",
+        "peekOfCode": "def toggle_sidebar(n_clicks):\n    base = {\"backgroundColor\": \"#f8f9fa\", \"display\": \"flex\", \"flexDirection\": \"column\", \"transition\": \"width 0.3s ease\", \"overflow\": \"hidden\", \"flexShrink\": \"0\", \"borderRight\": \"1px solid #e0e0e0\", \"borderRadius\": \"0 12px 12px 0\"}\n    btn_base = {\"border\": \"none\", \"color\": \"white\", \"cursor\": \"pointer\", \"borderRadius\": \"8px\", \"display\": \"flex\", \"alignItems\": \"center\", \"justifyContent\": \"center\"}\n    if n_clicks % 2 == 1:\n        # Collapsed: square button, no background\n        return (\n            {**base, \"width\": \"50px\", \"backgroundColor\": \"transparent\", \"borderRight\": \"none\"},\n            {\"display\": \"none\"},\n            {\"display\": \"none\"},\n            {**btn_base, \"background\": \"#3498db\", \"width\": \"36px\", \"height\": \"36px\", \"padding\": \"0\", \"fontSize\": \"16px\"}",
+        "detail": "app_main_OLD",
+        "documentation": {}
+    },
+    {
+        "label": "quick_select",
+        "kind": 2,
+        "importPath": "app_main_OLD",
+        "description": "app_main_OLD",
+        "peekOfCode": "def quick_select(all_clicks, reset_clicks):\n    return [\"emergency\", \"surgery\", \"general_medicine\", \"ICU\"] if ctx.triggered_id == \"select-all-btn\" else [\"emergency\"]\n@callback(Output(\"week-slider\", \"value\"), [Input(\"q1-btn\", \"n_clicks\"), Input(\"q2-btn\", \"n_clicks\"), Input(\"q3-btn\", \"n_clicks\"), Input(\"q4-btn\", \"n_clicks\"), Input(\"h1-btn\", \"n_clicks\"), Input(\"h2-btn\", \"n_clicks\"), Input(\"reset-btn\", \"n_clicks\")], prevent_initial_call=True)\ndef set_time_period(q1, q2, q3, q4, h1, h2, reset):\n    return {\"q1-btn\": [1, 13], \"q2-btn\": [14, 26], \"q3-btn\": [27, 39], \"q4-btn\": [40, 52], \"h1-btn\": [1, 26], \"h2-btn\": [27, 52], \"reset-btn\": [1, 52]}.get(ctx.triggered_id, [1, 52])\n@callback(Output(\"current-week-range\", \"data\"), Input(\"week-slider\", \"value\"))\ndef store_week_range(week_range):\n    return week_range\n# Sync inputs with slider\n@callback(",
+        "detail": "app_main_OLD",
+        "documentation": {}
+    },
+    {
+        "label": "set_time_period",
+        "kind": 2,
+        "importPath": "app_main_OLD",
+        "description": "app_main_OLD",
+        "peekOfCode": "def set_time_period(q1, q2, q3, q4, h1, h2, reset):\n    return {\"q1-btn\": [1, 13], \"q2-btn\": [14, 26], \"q3-btn\": [27, 39], \"q4-btn\": [40, 52], \"h1-btn\": [1, 26], \"h2-btn\": [27, 52], \"reset-btn\": [1, 52]}.get(ctx.triggered_id, [1, 52])\n@callback(Output(\"current-week-range\", \"data\"), Input(\"week-slider\", \"value\"))\ndef store_week_range(week_range):\n    return week_range\n# Sync inputs with slider\n@callback(\n    [Output(\"week-start-input\", \"value\"), Output(\"week-end-input\", \"value\")],\n    Input(\"week-slider\", \"value\")\n)",
+        "detail": "app_main_OLD",
+        "documentation": {}
+    },
+    {
+        "label": "store_week_range",
+        "kind": 2,
+        "importPath": "app_main_OLD",
+        "description": "app_main_OLD",
+        "peekOfCode": "def store_week_range(week_range):\n    return week_range\n# Sync inputs with slider\n@callback(\n    [Output(\"week-start-input\", \"value\"), Output(\"week-end-input\", \"value\")],\n    Input(\"week-slider\", \"value\")\n)\ndef sync_inputs_from_slider(week_range):\n    return week_range[0], week_range[1]\n# Sync slider with inputs",
+        "detail": "app_main_OLD",
+        "documentation": {}
+    },
+    {
+        "label": "sync_inputs_from_slider",
+        "kind": 2,
+        "importPath": "app_main_OLD",
+        "description": "app_main_OLD",
+        "peekOfCode": "def sync_inputs_from_slider(week_range):\n    return week_range[0], week_range[1]\n# Sync slider with inputs\n@callback(\n    Output(\"week-slider\", \"value\", allow_duplicate=True),\n    [Input(\"week-start-input\", \"value\"), Input(\"week-end-input\", \"value\")],\n    prevent_initial_call=True\n)\ndef sync_slider_from_inputs(start, end):\n    start = max(1, min(52, start or 1))",
+        "detail": "app_main_OLD",
+        "documentation": {}
+    },
+    {
+        "label": "sync_slider_from_inputs",
+        "kind": 2,
+        "importPath": "app_main_OLD",
+        "description": "app_main_OLD",
+        "peekOfCode": "def sync_slider_from_inputs(start, end):\n    start = max(1, min(52, start or 1))\n    end = max(1, min(52, end or 52))\n    if start > end:\n        start, end = end, start\n    return [start, end]\n@callback(Output(\"expanded-widget\", \"data\"), [Input(\"mini-slot-1\", \"n_clicks\"), Input(\"mini-slot-2\", \"n_clicks\")], [State(\"expanded-widget\", \"data\")], prevent_initial_call=True)\ndef swap_widget(click1, click2, current):\n    widgets = [\"overview\", \"quantity\", \"quality\"]\n    others = [w for w in widgets if w != current]",
+        "detail": "app_main_OLD",
+        "documentation": {}
+    },
+    {
+        "label": "swap_widget",
+        "kind": 2,
+        "importPath": "app_main_OLD",
+        "description": "app_main_OLD",
+        "peekOfCode": "def swap_widget(click1, click2, current):\n    widgets = [\"overview\", \"quantity\", \"quality\"]\n    others = [w for w in widgets if w != current]\n    return others[0] if ctx.triggered_id == \"mini-slot-1\" else others[1] if ctx.triggered_id == \"mini-slot-2\" else current\n@callback([Output(\"main-widget-area\", \"children\"), Output(\"mini-slot-1\", \"children\"), Output(\"mini-slot-2\", \"children\")], [Input(\"expanded-widget\", \"data\"), Input(\"dept-filter\", \"value\"), Input(\"week-slider\", \"value\")])\ndef render_widgets(expanded, selected_depts, week_range):\n    widgets = [\"overview\", \"quantity\", \"quality\"]\n    others = [w for w in widgets if w != expanded]\n    return make_main_widget(expanded, selected_depts or [\"emergency\"], week_range), make_mini_widget(others[0]), make_mini_widget(others[1])\nif __name__ == \"__main__\":",
+        "detail": "app_main_OLD",
+        "documentation": {}
+    },
+    {
+        "label": "render_widgets",
+        "kind": 2,
+        "importPath": "app_main_OLD",
+        "description": "app_main_OLD",
+        "peekOfCode": "def render_widgets(expanded, selected_depts, week_range):\n    widgets = [\"overview\", \"quantity\", \"quality\"]\n    others = [w for w in widgets if w != expanded]\n    return make_main_widget(expanded, selected_depts or [\"emergency\"], week_range), make_mini_widget(others[0]), make_mini_widget(others[1])\nif __name__ == \"__main__\":\n    app.run(debug=True, port=8050)",
+        "detail": "app_main_OLD",
+        "documentation": {}
+    },
+    {
+        "label": "app",
+        "kind": 5,
+        "importPath": "app_main_OLD",
+        "description": "app_main_OLD",
+        "peekOfCode": "app = Dash(__name__, suppress_callback_exceptions=True)\napp.title = \"Hospital Dashboard\"\n# Load data\nDATA_PATH = \"jbi100_app/data/services_weekly.csv\"\ndf = pd.read_csv(DATA_PATH)\ndf[\"acceptance_rate\"] = (df[\"patients_admitted\"] / df[\"patients_request\"] * 100).round(1)\nDEPT_COLORS = {\"emergency\": \"#e74c3c\", \"surgery\": \"#3498db\", \"general_medicine\": \"#2ecc71\", \"ICU\": \"#9b59b6\"}\nDEPT_LABELS = {\"emergency\": \"Emergency\", \"surgery\": \"Surgery\", \"general_medicine\": \"General Medicine\", \"ICU\": \"ICU\"}\nDATA_FOR_CLIENT = {}\nfor week in range(1, 53):",
+        "detail": "app_main_OLD",
+        "documentation": {}
+    },
+    {
+        "label": "app.title",
+        "kind": 5,
+        "importPath": "app_main_OLD",
+        "description": "app_main_OLD",
+        "peekOfCode": "app.title = \"Hospital Dashboard\"\n# Load data\nDATA_PATH = \"jbi100_app/data/services_weekly.csv\"\ndf = pd.read_csv(DATA_PATH)\ndf[\"acceptance_rate\"] = (df[\"patients_admitted\"] / df[\"patients_request\"] * 100).round(1)\nDEPT_COLORS = {\"emergency\": \"#e74c3c\", \"surgery\": \"#3498db\", \"general_medicine\": \"#2ecc71\", \"ICU\": \"#9b59b6\"}\nDEPT_LABELS = {\"emergency\": \"Emergency\", \"surgery\": \"Surgery\", \"general_medicine\": \"General Medicine\", \"ICU\": \"ICU\"}\nDATA_FOR_CLIENT = {}\nfor week in range(1, 53):\n    week_data = df[df[\"week\"] == week]",
+        "detail": "app_main_OLD",
+        "documentation": {}
+    },
+    {
+        "label": "DATA_PATH",
+        "kind": 5,
+        "importPath": "app_main_OLD",
+        "description": "app_main_OLD",
+        "peekOfCode": "DATA_PATH = \"jbi100_app/data/services_weekly.csv\"\ndf = pd.read_csv(DATA_PATH)\ndf[\"acceptance_rate\"] = (df[\"patients_admitted\"] / df[\"patients_request\"] * 100).round(1)\nDEPT_COLORS = {\"emergency\": \"#e74c3c\", \"surgery\": \"#3498db\", \"general_medicine\": \"#2ecc71\", \"ICU\": \"#9b59b6\"}\nDEPT_LABELS = {\"emergency\": \"Emergency\", \"surgery\": \"Surgery\", \"general_medicine\": \"General Medicine\", \"ICU\": \"ICU\"}\nDATA_FOR_CLIENT = {}\nfor week in range(1, 53):\n    week_data = df[df[\"week\"] == week]\n    DATA_FOR_CLIENT[week] = {row[\"service\"]: {\"satisfaction\": int(row[\"patient_satisfaction\"]), \"acceptance\": round(row[\"acceptance_rate\"], 1)} for _, row in week_data.iterrows()}\ndef create_overview_charts(selected_depts, week_range):",
+        "detail": "app_main_OLD",
+        "documentation": {}
+    },
+    {
+        "label": "df",
+        "kind": 5,
+        "importPath": "app_main_OLD",
+        "description": "app_main_OLD",
+        "peekOfCode": "df = pd.read_csv(DATA_PATH)\ndf[\"acceptance_rate\"] = (df[\"patients_admitted\"] / df[\"patients_request\"] * 100).round(1)\nDEPT_COLORS = {\"emergency\": \"#e74c3c\", \"surgery\": \"#3498db\", \"general_medicine\": \"#2ecc71\", \"ICU\": \"#9b59b6\"}\nDEPT_LABELS = {\"emergency\": \"Emergency\", \"surgery\": \"Surgery\", \"general_medicine\": \"General Medicine\", \"ICU\": \"ICU\"}\nDATA_FOR_CLIENT = {}\nfor week in range(1, 53):\n    week_data = df[df[\"week\"] == week]\n    DATA_FOR_CLIENT[week] = {row[\"service\"]: {\"satisfaction\": int(row[\"patient_satisfaction\"]), \"acceptance\": round(row[\"acceptance_rate\"], 1)} for _, row in week_data.iterrows()}\ndef create_overview_charts(selected_depts, week_range):\n    week_min, week_max = week_range",
+        "detail": "app_main_OLD",
+        "documentation": {}
+    },
+    {
+        "label": "df[\"acceptance_rate\"]",
+        "kind": 5,
+        "importPath": "app_main_OLD",
+        "description": "app_main_OLD",
+        "peekOfCode": "df[\"acceptance_rate\"] = (df[\"patients_admitted\"] / df[\"patients_request\"] * 100).round(1)\nDEPT_COLORS = {\"emergency\": \"#e74c3c\", \"surgery\": \"#3498db\", \"general_medicine\": \"#2ecc71\", \"ICU\": \"#9b59b6\"}\nDEPT_LABELS = {\"emergency\": \"Emergency\", \"surgery\": \"Surgery\", \"general_medicine\": \"General Medicine\", \"ICU\": \"ICU\"}\nDATA_FOR_CLIENT = {}\nfor week in range(1, 53):\n    week_data = df[df[\"week\"] == week]\n    DATA_FOR_CLIENT[week] = {row[\"service\"]: {\"satisfaction\": int(row[\"patient_satisfaction\"]), \"acceptance\": round(row[\"acceptance_rate\"], 1)} for _, row in week_data.iterrows()}\ndef create_overview_charts(selected_depts, week_range):\n    week_min, week_max = week_range\n    fig = make_subplots(rows=2, cols=1, shared_xaxes=True, vertical_spacing=0.18, subplot_titles=(\"Patient Satisfaction by Department\", \"Acceptance Rate by Department\"))",
+        "detail": "app_main_OLD",
+        "documentation": {}
+    },
+    {
+        "label": "DEPT_COLORS",
+        "kind": 5,
+        "importPath": "app_main_OLD",
+        "description": "app_main_OLD",
+        "peekOfCode": "DEPT_COLORS = {\"emergency\": \"#e74c3c\", \"surgery\": \"#3498db\", \"general_medicine\": \"#2ecc71\", \"ICU\": \"#9b59b6\"}\nDEPT_LABELS = {\"emergency\": \"Emergency\", \"surgery\": \"Surgery\", \"general_medicine\": \"General Medicine\", \"ICU\": \"ICU\"}\nDATA_FOR_CLIENT = {}\nfor week in range(1, 53):\n    week_data = df[df[\"week\"] == week]\n    DATA_FOR_CLIENT[week] = {row[\"service\"]: {\"satisfaction\": int(row[\"patient_satisfaction\"]), \"acceptance\": round(row[\"acceptance_rate\"], 1)} for _, row in week_data.iterrows()}\ndef create_overview_charts(selected_depts, week_range):\n    week_min, week_max = week_range\n    fig = make_subplots(rows=2, cols=1, shared_xaxes=True, vertical_spacing=0.18, subplot_titles=(\"Patient Satisfaction by Department\", \"Acceptance Rate by Department\"))\n    for dept in selected_depts:",
+        "detail": "app_main_OLD",
+        "documentation": {}
+    },
+    {
+        "label": "DEPT_LABELS",
+        "kind": 5,
+        "importPath": "app_main_OLD",
+        "description": "app_main_OLD",
+        "peekOfCode": "DEPT_LABELS = {\"emergency\": \"Emergency\", \"surgery\": \"Surgery\", \"general_medicine\": \"General Medicine\", \"ICU\": \"ICU\"}\nDATA_FOR_CLIENT = {}\nfor week in range(1, 53):\n    week_data = df[df[\"week\"] == week]\n    DATA_FOR_CLIENT[week] = {row[\"service\"]: {\"satisfaction\": int(row[\"patient_satisfaction\"]), \"acceptance\": round(row[\"acceptance_rate\"], 1)} for _, row in week_data.iterrows()}\ndef create_overview_charts(selected_depts, week_range):\n    week_min, week_max = week_range\n    fig = make_subplots(rows=2, cols=1, shared_xaxes=True, vertical_spacing=0.18, subplot_titles=(\"Patient Satisfaction by Department\", \"Acceptance Rate by Department\"))\n    for dept in selected_depts:\n        # Load ALL data, not filtered by week_range",
+        "detail": "app_main_OLD",
+        "documentation": {}
+    },
+    {
+        "label": "DATA_FOR_CLIENT",
+        "kind": 5,
+        "importPath": "app_main_OLD",
+        "description": "app_main_OLD",
+        "peekOfCode": "DATA_FOR_CLIENT = {}\nfor week in range(1, 53):\n    week_data = df[df[\"week\"] == week]\n    DATA_FOR_CLIENT[week] = {row[\"service\"]: {\"satisfaction\": int(row[\"patient_satisfaction\"]), \"acceptance\": round(row[\"acceptance_rate\"], 1)} for _, row in week_data.iterrows()}\ndef create_overview_charts(selected_depts, week_range):\n    week_min, week_max = week_range\n    fig = make_subplots(rows=2, cols=1, shared_xaxes=True, vertical_spacing=0.18, subplot_titles=(\"Patient Satisfaction by Department\", \"Acceptance Rate by Department\"))\n    for dept in selected_depts:\n        # Load ALL data, not filtered by week_range\n        dept_data = df[df[\"service\"] == dept].sort_values(\"week\")",
+        "detail": "app_main_OLD",
+        "documentation": {}
+    },
+    {
+        "label": "WIDGET_INFO",
+        "kind": 5,
+        "importPath": "app_main_OLD",
+        "description": "app_main_OLD",
+        "peekOfCode": "WIDGET_INFO = {\n    \"overview\": {\"icon\": \"📊\", \"title\": \"Hospital Performance Overview\", \"subtitle\": \"T1: Browse trends and identify outliers\"},\n    \"quantity\": {\"icon\": \"📦\", \"title\": \"Capacity & Patient Flow\", \"subtitle\": \"T2: Bed allocation | T3: Stay duration\"},\n    \"quality\": {\"icon\": \"⭐\", \"title\": \"Quality & Satisfaction\", \"subtitle\": \"T4: Correlations | T5: Staff impact | T6: Extremes\"}\n}\ndef make_main_widget(name, selected_depts, week_range):\n    info = WIDGET_INFO[name]\n    header = html.Div(style={\"paddingBottom\": \"8px\", \"marginBottom\": \"10px\", \"borderBottom\": \"2px solid #eee\", \"flexShrink\": \"0\"}, children=[\n        html.H4(f\"{info['icon']} {info['title']}\", style={\"margin\": \"0\", \"color\": \"#2c3e50\", \"fontWeight\": \"500\"}),\n        html.Span(info[\"subtitle\"], style={\"fontSize\": \"12px\", \"color\": \"#999\"})",
+        "detail": "app_main_OLD",
+        "documentation": {}
+    },
+    {
+        "label": "app.layout",
+        "kind": 5,
+        "importPath": "app_main_OLD",
+        "description": "app_main_OLD",
+        "peekOfCode": "app.layout = html.Div(style={\"display\": \"flex\", \"height\": \"100vh\", \"backgroundColor\": \"#f5f6fa\", \"fontFamily\": \"Segoe UI, Arial, sans-serif\", \"overflow\": \"hidden\"}, children=[\n    dcc.Store(id=\"week-data-store\", data=DATA_FOR_CLIENT),\n    dcc.Store(id=\"current-week-range\", data=[1, 52]),\n    dcc.Store(id=\"expanded-widget\", data=\"overview\"),\n    # Sidebar\n    html.Div(id=\"sidebar\", style={\"width\": \"240px\", \"backgroundColor\": \"#f8f9fa\", \"display\": \"flex\", \"flexDirection\": \"column\", \"transition\": \"width 0.3s ease\", \"overflow\": \"hidden\", \"flexShrink\": \"0\", \"borderRight\": \"1px solid #e0e0e0\", \"borderRadius\": \"0 12px 12px 0\"}, children=[\n        html.Div(id=\"toggle-container\", style={\"padding\": \"10px\", \"display\": \"flex\", \"justifyContent\": \"center\"}, children=[\n            html.Button(id=\"toggle-sidebar\", n_clicks=0, style={\"background\": \"#3eaa77\", \"border\": \"none\", \"color\": \"white\", \"cursor\": \"pointer\", \"borderRadius\": \"8px\", \"padding\": \"10px 12px\", \"fontSize\": \"13px\", \"width\": \"100%\", \"display\": \"flex\", \"alignItems\": \"center\", \"justifyContent\": \"center\", \"gap\": \"6px\"}, children=[html.Span(\"⚙️\", id=\"sidebar-icon\", style={\"fontSize\": \"16px\"}), html.Span(\"Options\", id=\"sidebar-title\")])\n        ]),\n        html.Div(id=\"sidebar-content\", style={\"padding\": \"15px\", \"overflowY\": \"auto\"}, children=[",
+        "detail": "app_main_OLD",
+        "documentation": {}
+    }
+]
