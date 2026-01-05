@@ -49,6 +49,8 @@ def create_layout():
             dcc.Store(id="hovered-week-store", data=None),  # For linking hover across widgets
             dcc.Store(id="primary-dept-store", data="emergency"),  # Primary dept for Quality widget
             dcc.Store(id="impact-metric-store", data="morale"),  # Toggle: morale or satisfaction
+            dcc.Store(id="quantity-selected-week", data=None),  # For Quantity widget week selection
+            dcc.Store(id="quantity-selected-service", data=None),  # For Quantity widget service selection
             
             # =========================================================
             # SIDEBAR (from views/menu.py)
