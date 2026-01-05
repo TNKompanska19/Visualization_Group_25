@@ -28,6 +28,18 @@ app.layout = create_layout()
 # Register all callbacks
 register_all_callbacks()
 
+# Clientside callback: sync highlight rectangle with Overview panning
+from dash import ClientsideFunction, Output, Input, State
+
+app.clientside_callback(
+    ClientsideFunction(namespace='clientside', function_name='updateHighlightRect'),
+    Output("quality-mini-sparkline", "figure", allow_duplicate=True),
+    Input("overview-chart", "relayoutData"),
+    State("quality-mini-sparkline", "figure"),
+    State("week-slider", "value"),
+    prevent_initial_call=True
+)
+
 
 # =============================================================================
 # RUN

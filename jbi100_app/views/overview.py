@@ -290,8 +290,11 @@ def create_overview_charts(df, selected_depts, week_range, show_events=True, hid
     )
     
     dtick = 1 if zoom_level == "detail" else 4
-    fig.update_xaxes(showgrid=True, gridcolor="#f0f0f0", dtick=dtick,
-                     range=[week_min - 0.5, week_max + 0.5], fixedrange=False)
+    fig.update_xaxes(
+        showgrid=True, gridcolor="#f0f0f0", dtick=dtick,
+        range=[week_min - 0.5, week_max + 0.5], 
+        fixedrange=False
+    )
     fig.update_yaxes(showgrid=True, gridcolor="#e0e0e0", zeroline=False,
                      range=[0, 100], dtick=25, fixedrange=True,
                      tickfont=dict(size=9))

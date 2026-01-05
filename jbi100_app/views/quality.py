@@ -749,26 +749,20 @@ def create_week_context_chart(services_df, department, selected_week, metric='st
 
 def create_quality_mini_sparkline(services_df, selected_depts, week_range, highlighted_week=None, hide_anomalies=False, highlight_color=None):
     """
-    Create a compact MORALE-ONLY sparkline showing ALL selected departments.
+    Create a STATIC sparkline showing ALL 52 weeks with highlight rectangle for selected range.
     
-    Justification (Munzner M4_04 - Coordinated Multiple Views):
-    - Multiple lines with consistent colors match Overview widget
-    - Shaded region shows selected range (filter context)
-    - Vertical marker highlights hovered week from Overview (linking)
-    - Same color encoding across views reduces cognitive load (M3_03 Eyes beat Memory)
+    CRITICAL: This sparkline ALWAYS shows W1-52. The week_range parameter only controls
+    the blue highlight rectangle, NOT the x-axis range.
     
-    Design changes (Cleveland & McGill accuracy):
-    - Dynamic x-axis ticks based on week range for precise position reading
-    - More ticks = easier week identification without mental interpolation
-    
-    Args:
-        selected_depts: List of department IDs to display
-        hide_anomalies: If True, exclude anomaly weeks from display (Filter - Yi et al.)
-        highlight_color: Color for the vertical week highlight line (matches hovered dept)
+    Justification (Munzner M4_04 - Focus+Context):
+    - Full year context always visible (W1-52)
+    - Blue rectangle shows current focus (selected week range)
+    - Vertical marker shows hovered week (linking)
     """
     from jbi100_app.config import DEPT_COLORS
     
-    week_min, week_max = week_range
+    # week_range is ONLY for highlight rectangle, NOT for x-axis
+    highlight_min, highlight_max = week_range
     
     if not selected_depts:
         fig = go.Figure()
@@ -777,15 +771,15 @@ def create_quality_mini_sparkline(services_df, selected_depts, week_range, highl
     
     fig = go.Figure()
     
-    # Add shaded region for selected week range
+    # Add shaded region for selected week range (HIGHLIGHT ONLY)
     fig.add_vrect(
-        x0=week_min - 0.5, x1=week_max + 0.5,
-        fillcolor="rgba(52, 152, 219, 0.1)",
+        x0=highlight_min - 0.5, x1=highlight_max + 0.5,
+        fillcolor="rgba(52, 152, 219, 0.2)",
         line_width=0,
         layer="below"
     )
     
-    # Add a line for each selected department
+    # Add a line for each selected department - ALWAYS ALL 52 WEEKS
     for dept in selected_depts:
         dept_data = services_df[services_df['service'] == dept].sort_values('week')
         
@@ -814,10 +808,7 @@ def create_quality_mini_sparkline(services_df, selected_depts, week_range, highl
             show_highlight = False
         
         if show_highlight:
-            # Use provided color or default to orange
             line_color = highlight_color or "#e67e22"
-            
-            # Vertical line at hovered week (spans all department lines)
             fig.add_vline(
                 x=highlighted_week, 
                 line_color=line_color,
@@ -825,30 +816,16 @@ def create_quality_mini_sparkline(services_df, selected_depts, week_range, highl
                 line_dash="solid"
             )
     
-    # Dynamic x-axis ticks based on week range (Cleveland & McGill: position accuracy)
-    # Goal: 5-8 ticks for optimal readability without clutter
-    week_span = week_max - week_min + 1
-    if week_span <= 12:
-        tick_interval = 2   # Every 2 weeks for short ranges (W1-12)
-    elif week_span <= 26:
-        tick_interval = 4   # Every 4 weeks (~monthly)
-    else:
-        tick_interval = 8   # Every 8 weeks for full year
-    
-    # Generate tick values starting from week_min
-    tick_vals = list(range(week_min, week_max + 1, tick_interval))
-    # Always include last week if not already present
-    if week_max not in tick_vals:
-        tick_vals.append(week_max)
-    tick_text = [f'W{w}' for w in tick_vals]
+    # FIXED: Always show W1-52, use sparse ticks (every 4 weeks)
+    tick_vals = [4, 8, 12, 16, 20, 24, 28, 32, 36, 40, 44, 48, 52]
+    tick_text = [str(w) for w in tick_vals]
     
     fig.update_layout(
-        margin=dict(l=28, r=8, t=4, b=18),  # Reduced top margin (title moved to widget header)
-        height=100,  # Increased from 80 (reclaimed space from bottom hint)
+        margin=dict(l=28, r=8, t=4, b=18),
+        height=100,
         plot_bgcolor='rgba(0,0,0,0)',
         paper_bgcolor='rgba(0,0,0,0)',
         showlegend=False,
-        # Title removed - now in widget header (Tufte: maximize data-ink ratio)
         xaxis=dict(
             showgrid=False,
             showticklabels=True,
@@ -857,17 +834,17 @@ def create_quality_mini_sparkline(services_df, selected_depts, week_range, highl
             tickfont=dict(size=8, color='#64748b'),
             zeroline=False,
             fixedrange=True,
-            range=[week_min - 0.5, week_max + 0.5]  # Dynamic range based on selection
+            range=[0.5, 52.5]  # ALWAYS W1-52
         ),
         yaxis=dict(
             showgrid=True,
             gridcolor='rgba(0,0,0,0.05)',
             showticklabels=True,
-            tickvals=[0, 25, 50, 75, 100],  # Quartiles for better precision
+            tickvals=[0, 25, 50, 75, 100],
             ticktext=['0', '25', '50', '75', '100'],
             tickfont=dict(size=7, color='#94a3b8'),
             zeroline=False,
-            range=[0, 105],  # Full 0-100 range (Tufte: graphical integrity)
+            range=[0, 105],
             fixedrange=True
         ),
         hovermode='x unified'
