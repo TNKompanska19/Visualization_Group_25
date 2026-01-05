@@ -600,25 +600,38 @@ def create_overview_expanded(df, selected_depts, week_range, show_events=True, h
                 ]
             )
             
-            # Tooltip panel
+            # Tooltip panel - height matches chart for spatial alignment
             tooltip_section = html.Div(
                 id="side-tooltip",
                 style={
-                    "width": "95px",  # Slightly wider now that annotations are moved
+                    "width": "95px",
                     "backgroundColor": "#f8f9fa",
                     "borderRadius": "6px",
                     "padding": "7px",
                     "border": "1px solid #e0e0e0",
                     "flexShrink": "0",
                     "fontSize": "9px",
-                    "overflow": "hidden"
+                    "overflow": "hidden",
+                    "alignSelf": "stretch"  # Match parent height for alignment
                 },
                 children=[
                     html.Div(
                         id="tooltip-content",
+                        style={"height": "100%"},  # Full height for flexbox alignment
                         children=[
-                            html.Div("Hover over", style={"color": "#999", "textAlign": "center"}),
-                            html.Div("the chart", style={"color": "#999", "textAlign": "center"})
+                            html.Div(
+                                style={
+                                    "height": "100%",
+                                    "display": "flex",
+                                    "flexDirection": "column",
+                                    "justifyContent": "center",
+                                    "alignItems": "center"
+                                },
+                                children=[
+                                    html.Div("Hover over", style={"color": "#999", "textAlign": "center"}),
+                                    html.Div("the chart", style={"color": "#999", "textAlign": "center"})
+                                ]
+                            )
                         ]
                     )
                 ]
@@ -639,14 +652,27 @@ def create_overview_expanded(df, selected_depts, week_range, show_events=True, h
                     "padding": "7px",
                     "border": "1px solid #e0e0e0",
                     "flexShrink": "0",
-                    "fontSize": "9px"
+                    "fontSize": "9px",
+                    "alignSelf": "stretch"  # Match parent height for alignment
                 },
                 children=[
                     html.Div(
                         id="tooltip-content",
+                        style={"height": "100%"},  # Full height for flexbox alignment
                         children=[
-                            html.Div("Hover over", style={"color": "#999", "textAlign": "center"}),
-                            html.Div("the chart", style={"color": "#999", "textAlign": "center"})
+                            html.Div(
+                                style={
+                                    "height": "100%",
+                                    "display": "flex",
+                                    "flexDirection": "column",
+                                    "justifyContent": "center",
+                                    "alignItems": "center"
+                                },
+                                children=[
+                                    html.Div("Hover over", style={"color": "#999", "textAlign": "center"}),
+                                    html.Div("the chart", style={"color": "#999", "textAlign": "center"})
+                                ]
+                            )
                         ]
                     )
                 ]
@@ -739,7 +765,14 @@ def create_overview_mini(df, selected_depts, week_range):
 
 
 def build_tooltip_content(week, week_data, selected_depts, df, week_range):
-    """Build tooltip content for hover display."""
+    """
+    Build tooltip content with spatial alignment to charts.
+    
+    Design (Gestalt Proximity Principle):
+    - Satisfaction stats positioned to align with top chart
+    - Acceptance stats positioned to align with bottom chart
+    - This reduces eye movement and cognitive load when cross-referencing
+    """
     week_rows = df[df["week"] == week]
     events_this_week = []
     for _, row in week_rows.iterrows():
@@ -749,32 +782,35 @@ def build_tooltip_content(week, week_data, selected_depts, df, week_range):
                 "dept": row["service"]
             })
     
-    tooltip_children = [
+    # === TOP SECTION: Week header + Events + Satisfaction (aligns with top chart) ===
+    top_section_children = [
+        # Week header
         html.Div(f"Week {week}", style={
             "fontWeight": "600", "fontSize": "12px", "color": "#2c3e50",
-            "paddingBottom": "5px", "marginBottom": "6px", "borderBottom": "2px solid #3498db"
+            "paddingBottom": "4px", "marginBottom": "5px", "borderBottom": "2px solid #3498db"
         })
     ]
     
+    # Events (if any)
     if events_this_week:
-        tooltip_children.append(
+        top_section_children.append(
             html.Div("EVENTS", style={
-                "fontSize": "8px", "color": "#888", "marginBottom": "3px", "fontWeight": "600"
+                "fontSize": "8px", "color": "#888", "marginBottom": "2px", "fontWeight": "600"
             })
         )
         for evt_info in events_this_week:
             evt = evt_info["event"]
             dept = evt_info["dept"]
-            dept_color = DEPT_COLORS.get(dept, "#999")  # Use DEPT color, not EVENT color
+            dept_color = DEPT_COLORS.get(dept, "#999")
             
-            tooltip_children.append(
+            top_section_children.append(
                 html.Div(
                     style={
                         "display": "flex", "alignItems": "center", "gap": "3px",
-                        "marginBottom": "4px", "padding": "2px 4px",
-                        "backgroundColor": _hex_to_rgba(dept_color, 0.15),  # Dept color background
+                        "marginBottom": "3px", "padding": "2px 4px",
+                        "backgroundColor": _hex_to_rgba(dept_color, 0.15),
                         "borderRadius": "3px", 
-                        "borderLeft": f"3px solid {dept_color}"  # Dept color border
+                        "borderLeft": f"3px solid {dept_color}"
                     },
                     children=[
                         html.Span(EVENT_ICONS.get(evt, "⚡"), style={"fontSize": "10px"}),
@@ -784,15 +820,16 @@ def build_tooltip_content(week, week_data, selected_depts, df, week_range):
                     ]
                 )
             )
-        tooltip_children.append(html.Div(style={"height": "4px"}))
+        top_section_children.append(html.Div(style={"height": "3px"}))
     
-    tooltip_children.append(html.Div("SATISFACTION", style={
-        "fontSize": "8px", "color": "#888", "marginBottom": "3px", "fontWeight": "600"
+    # Satisfaction values
+    top_section_children.append(html.Div("SATISFACTION", style={
+        "fontSize": "8px", "color": "#888", "marginBottom": "2px", "fontWeight": "600"
     }))
     for dept in selected_depts:
         data = week_data.get(str(week), {}).get(dept)
         if data:
-            tooltip_children.append(
+            top_section_children.append(
                 html.Div(style={"display": "flex", "justifyContent": "space-between", "marginBottom": "2px"}, children=[
                     html.Span(DEPT_LABELS_SHORT[dept], style={"color": "#555", "fontSize": "9px"}),
                     html.Span(str(data["satisfaction"]), style={
@@ -801,13 +838,16 @@ def build_tooltip_content(week, week_data, selected_depts, df, week_range):
                 ])
             )
     
-    tooltip_children.append(html.Div("ACCEPTANCE", style={
-        "fontSize": "8px", "color": "#888", "margin": "6px 0 3px 0", "fontWeight": "600"
-    }))
+    # === BOTTOM SECTION: Acceptance (aligns with bottom chart) ===
+    bottom_section_children = [
+        html.Div("ACCEPTANCE", style={
+            "fontSize": "8px", "color": "#888", "marginBottom": "2px", "fontWeight": "600"
+        })
+    ]
     for dept in selected_depts:
         data = week_data.get(str(week), {}).get(dept)
         if data:
-            tooltip_children.append(
+            bottom_section_children.append(
                 html.Div(style={"display": "flex", "justifyContent": "space-between", "marginBottom": "2px"}, children=[
                     html.Span(DEPT_LABELS_SHORT[dept], style={"color": "#555", "fontSize": "9px"}),
                     html.Span(f"{data['acceptance']}%", style={
@@ -816,4 +856,22 @@ def build_tooltip_content(week, week_data, selected_depts, df, week_range):
                 ])
             )
     
-    return tooltip_children
+    # === COMBINED LAYOUT: Flexbox with space-between to push sections apart ===
+    # This aligns top section with Satisfaction chart, bottom with Acceptance chart
+    return [
+        html.Div(
+            style={
+                "display": "flex",
+                "flexDirection": "column",
+                "justifyContent": "space-between",  # Push top/bottom apart
+                "height": "100%",
+                "minHeight": "380px"  # Match chart height for alignment
+            },
+            children=[
+                # Top section (Week + Events + Satisfaction)
+                html.Div(children=top_section_children),
+                # Bottom section (Acceptance)
+                html.Div(children=bottom_section_children)
+            ]
+        )
+    ]

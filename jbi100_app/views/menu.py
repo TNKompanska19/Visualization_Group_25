@@ -70,18 +70,63 @@ def create_sidebar():
                 id="sidebar-content",
                 style={"padding": "15px", "overflowY": "auto"},
                 children=[
-                    # Department filter
+                    # Department filter - Custom component with primary indicator
+                    # Design: Click to toggle selection, click again on selected = make primary
+                    # Theory: Norman's visibility principle - primary state is visible
                     html.Label(
                         "Departments",
-                        style={"color": "#2c3e50", "fontWeight": "600", "marginBottom": "10px", "display": "block", "fontSize": "13px"}
+                        style={"color": "#2c3e50", "fontWeight": "600", "marginBottom": "6px", "display": "block", "fontSize": "13px"}
                     ),
+                    html.Div(
+                        "⭐ = primary selected department",
+                        style={"fontSize": "9px", "color": "#95a5a6", "marginBottom": "8px", "fontStyle": "italic"}
+                    ),
+                    
+                    # Hidden checklist for storing selected values (used by callbacks)
                     dcc.Checklist(
                         id="dept-filter",
-                        options=[{"label": f" {DEPT_LABELS[dept]}", "value": dept} for dept in DEPT_LABELS],
+                        options=[{"label": "", "value": dept} for dept in DEPT_LABELS],
                         value=["emergency"],
-                        style={"color": "#34495e", "fontSize": "12px"},
-                        inputStyle={"marginRight": "8px"},
-                        labelStyle={"display": "block", "marginBottom": "8px", "cursor": "pointer"}
+                        style={"display": "none"}  # Hidden - we use custom UI
+                    ),
+                    
+                    # Custom department items with primary indicator
+                    html.Div(
+                        id="dept-selector-container",
+                        children=[
+                            html.Div(
+                                id=f"dept-item-{dept}",
+                                n_clicks=0,
+                                children=[
+                                    html.Span(
+                                        id=f"dept-check-{dept}",
+                                        children="☐",
+                                        style={"marginRight": "8px", "fontSize": "14px"}
+                                    ),
+                                    html.Span(
+                                        id=f"dept-star-{dept}",
+                                        children="",  # Will show ⭐ for primary
+                                        style={"marginRight": "4px", "fontSize": "12px"}
+                                    ),
+                                    html.Span(
+                                        DEPT_LABELS[dept],
+                                        style={"fontSize": "12px"}
+                                    )
+                                ],
+                                style={
+                                    "display": "flex",
+                                    "alignItems": "center",
+                                    "padding": "6px 8px",
+                                    "marginBottom": "4px",
+                                    "borderRadius": "6px",
+                                    "cursor": "pointer",
+                                    "backgroundColor": "#fff",
+                                    "border": "1px solid #e0e0e0",
+                                    "transition": "all 0.15s ease"
+                                }
+                            )
+                            for dept in DEPT_LABELS
+                        ]
                     ),
                     
                     html.Hr(style={"borderColor": "#e0e0e0", "margin": "15px 0"}),

@@ -13,7 +13,7 @@ from dash import callback, Output, Input, State, ctx, html
 from jbi100_app.data import get_services_data, get_patients_data, get_staff_schedule_data
 from jbi100_app.views.overview import create_overview_expanded, create_overview_mini
 from jbi100_app.views.quantity import create_quantity_expanded, create_quantity_mini
-from jbi100_app.views.quality import create_quality_widget
+from jbi100_app.views.quality import create_quality_widget, create_quality_mini
 
 # Load data once
 _services_df = get_services_data()
@@ -58,11 +58,12 @@ def register_widget_callbacks():
          Output("mini-slot-2", "children")],
         [Input("expanded-widget", "data"),
          Input("dept-filter", "value"),
+         Input("primary-dept-store", "data"),  # Added: Primary dept for quality widget
          Input("week-slider", "value"),
          Input("show-events-toggle", "value"),
          Input("hide-anomalies-toggle", "value")]
     )
-    def render_widgets(expanded, selected_depts, week_range, show_events_list, hide_anomalies_list):
+    def render_widgets(expanded, selected_depts, primary_dept, week_range, show_events_list, hide_anomalies_list):
         """
         Render all widgets based on current state.
         
@@ -72,13 +73,15 @@ def register_widget_callbacks():
         
         Args:
             expanded: Which widget is currently expanded ("overview", "quantity", "quality")
-            selected_depts: List of selected department IDs
+            selected_depts: List of selected department IDs (for overview/quantity)
+            primary_dept: Primary department for quality widget (single dept)
             week_range: [start_week, end_week] from slider
         
         Returns:
             tuple: (main_widget_content, mini1_content, mini2_content)
         """
         selected_depts = selected_depts or ["emergency"]
+        primary_dept = primary_dept or (selected_depts[0] if selected_depts else "emergency")
         
         # Convert checkbox lists to booleans
         show_events = "show" in (show_events_list or [])
@@ -96,24 +99,18 @@ def register_widget_callbacks():
             main_content = create_quantity_expanded(
                 _services_df, _patients_df, selected_depts, week_range
             )
-        else:  # quality
+        else:  # quality - uses primary_dept only (single department)
             main_content = create_quality_widget(
-                _services_df, _staff_schedule_df, selected_depts, week_range
+                _services_df, _staff_schedule_df, [primary_dept], week_range
             )
         
         # Create mini widgets
-        def create_quality_mini(services_df, selected_depts, week_range):
-            """Mini placeholder for quality widget"""
-            return html.Div([
-                html.H4("Quality Analysis", style={'color': '#2c3e50', 'fontSize': '14px'}),
-                html.P("Staff impact on morale & satisfaction", 
-                       style={'color': '#7f8c8d', 'fontSize': '11px'})
-            ])
-        
+        # Note: Quality mini shows all selected depts for morale sparkline, 
+        # but network view (expanded) shows only primary dept
         mini_creators = {
             "overview": lambda: create_overview_mini(_services_df, selected_depts, week_range),
             "quantity": lambda: create_quantity_mini(_services_df, selected_depts, week_range),
-            "quality": lambda: create_quality_mini(_services_df, selected_depts, week_range)
+            "quality": lambda: create_quality_mini(_services_df, _staff_schedule_df, selected_depts, week_range, hide_anomalies)
         }
         
         mini1 = mini_creators[others[0]]()

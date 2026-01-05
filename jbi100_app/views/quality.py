@@ -11,6 +11,8 @@ from dash import dcc, html
 import dash_cytoscape as cyto
 import plotly.graph_objects as go
 
+from jbi100_app.config import DEPT_COLORS as CONFIG_DEPT_COLORS, DEPT_LABELS_SHORT
+
 # Optimal hyperparameters from tuning
 OPTIMAL_HYPERPARAMS = {
     'emergency': {
@@ -41,6 +43,11 @@ ANOMALY_WEEKS = [3, 6, 9, 12, 15, 18, 21, 24, 27, 30, 33, 36, 39, 42, 45, 48, 51
 
 # Global cache for model data
 _model_cache = {}
+
+# Global cache for STABLE node positions per department
+# Key: (department, staff_id) -> (x, y)
+# This ensures staff nodes stay in the same place across weeks
+_position_cache = {}
 
 
 def compute_staff_impacts_all_weeks(services_df, staff_schedule_df, department):
@@ -172,17 +179,17 @@ def predict_from_team(department, active_staff_ids):
     return morale_pred, sat_pred, False, None
 
 
-def fan_positions(count, origin_x, origin_y, direction, base_distance=50, spread_angle=120):
-    """Generate fan/tree positions branching from origin."""
+def fan_positions(count, origin_x, origin_y, angle, base_distance=50, spread_angle=120):
+    """Generate fan/tree positions branching from origin.
+    
+    Args:
+        angle: Center angle in degrees (0=right, 90=down, 180=left, 270=up)
+        spread_angle: Total angular spread in degrees
+    """
     if count == 0:
         return []
     
-    if direction == 'left':
-        center_angle = math.pi
-    elif direction == 'right':
-        center_angle = 0
-    else:
-        center_angle = math.pi / 2
+    center_angle = math.radians(angle)
     
     positions = []
     max_per_ring = 8
@@ -202,9 +209,9 @@ def fan_positions(count, origin_x, origin_y, direction, base_distance=50, spread
                 for i in range(ring_count)
             ]
         
-        for angle in angles:
-            x = origin_x + ring_distance * math.cos(angle)
-            y = origin_y + ring_distance * math.sin(angle)
+        for ang in angles:
+            x = origin_x + ring_distance * math.cos(ang)
+            y = origin_y + ring_distance * math.sin(ang)
             positions.append((x, y))
             placed += 1
             if placed >= count:
@@ -280,11 +287,23 @@ def generate_stylesheet(working_ids):
 
 
 def create_network_for_week(staff_impacts, department, week, metric='morale', custom_working=None, include_all_edges=False):
-    """Create network with optional custom working status override.
+    """Create network with STABLE positions (nodes stay in same place across weeks).
     
-    If include_all_edges=True, all staff-to-role edges are included.
-    Edge visibility is then controlled via stylesheet.
+    Key design principle: Positions are computed ONCE per department based on 
+    staff_id (stable sort), then cached. This ensures:
+    - User can track individual staff across weeks by position
+    - Only brightness/size changes, not location
+    - Supports Object Constancy (Munzner) - maintain spatial mapping
+    
+    Args:
+        staff_impacts: DataFrame with staff impact data for this week
+        department: Department name
+        week: Week number
+        metric: 'morale' or 'satisfaction' for impact sizing
+        custom_working: Optional list of staff_ids to show as working (overrides data)
+        include_all_edges: If True, include all edges (visibility via stylesheet)
     """
+    global _position_cache
     
     if staff_impacts is None or staff_impacts.empty:
         return []
@@ -311,23 +330,39 @@ def create_network_for_week(staff_impacts, department, week, metric='morale', cu
     })
     
     ROLE_CONFIG = {
-        'doctor': {'x': CENTER_X - 90, 'y': CENTER_Y + 0, 'direction': 'left', 'spread': 120},
-        'nurse': {'x': CENTER_X, 'y': CENTER_Y + 50, 'direction': 'down', 'spread': 120},
-        'nursing_assistant': {'x': CENTER_X + 90, 'y': CENTER_Y + 0, 'direction': 'right', 'spread': 90}
+        'doctor': {'x': CENTER_X - 90, 'y': CENTER_Y + 0, 'angle': 200, 'spread': 120},
+        'nurse': {'x': CENTER_X, 'y': CENTER_Y + 50, 'angle': 90, 'spread': 120},
+        'nursing_assistant': {'x': CENTER_X + 90, 'y': CENTER_Y + 0, 'angle': 30, 'spread': 160}
     }
     
-    staff_by_role = {}
-    for role in ['doctor', 'nurse', 'nursing_assistant']:
-        role_staff = staff_impacts[staff_impacts['role'] == role].copy()
-        if not role_staff.empty:
-            role_staff['_working_sort'] = ~role_staff['working_this_week']
-            role_staff = role_staff.sort_values(['_working_sort', impact_col], 
-                                                 key=lambda x: x.abs() if x.name == impact_col else x,
-                                                 ascending=[True, False])
-            staff_by_role[role] = role_staff
+    # Check if we need to compute and cache positions for this department
+    cache_key = department
+    if cache_key not in _position_cache:
+        # First time for this department - compute STABLE positions
+        # Sort by staff_id (alphabetically) for consistent ordering across all weeks
+        _position_cache[cache_key] = {}
+        
+        for role, config in ROLE_CONFIG.items():
+            role_staff = staff_impacts[staff_impacts['role'] == role].copy()
+            if role_staff.empty:
+                continue
+            
+            # STABLE SORT: by staff_id (not by working status or impact)
+            role_staff = role_staff.sort_values('staff_id')
+            
+            role_x, role_y = config['x'], config['y']
+            positions = fan_positions(len(role_staff), role_x, role_y, config['angle'],
+                                     base_distance=40, spread_angle=config['spread'])
+            
+            for idx, (_, row) in enumerate(role_staff.iterrows()):
+                if idx < len(positions):
+                    staff_id = row['staff_id']
+                    _position_cache[cache_key][staff_id] = positions[idx]
     
+    # Now build elements using cached positions
     for role, config in ROLE_CONFIG.items():
-        if role not in staff_by_role:
+        role_staff = staff_impacts[staff_impacts['role'] == role].copy()
+        if role_staff.empty:
             continue
         
         role_x, role_y = config['x'], config['y']
@@ -345,27 +380,28 @@ def create_network_for_week(staff_impacts, department, week, metric='morale', cu
         })
         elements.append({'data': {'source': dept_id, 'target': role_id}})
         
-        role_staff = staff_by_role[role]
-        staff_positions = fan_positions(len(role_staff), role_x, role_y, config['direction'],
-                                        base_distance=40, spread_angle=config['spread'])
-        
-        for idx, (_, row) in enumerate(role_staff.iterrows()):
-            if idx >= len(staff_positions):
-                break
+        for _, row in role_staff.iterrows():
+            staff_id_val = row['staff_id']
             
-            pos_x, pos_y = staff_positions[idx]
+            # Get cached position (stable across weeks)
+            if staff_id_val in _position_cache[cache_key]:
+                pos_x, pos_y = _position_cache[cache_key][staff_id_val]
+            else:
+                # Fallback (shouldn't happen if cache is built correctly)
+                pos_x, pos_y = role_x, role_y + 50
+            
+            # Compute size based on current metric's impact
             abs_impact = abs(row[impact_col])
             normalized_impact = abs_impact / max_impact
             size = 16 + normalized_impact * 24
             
-            # Determine working status (custom override or from data)
-            staff_id_val = row['staff_id']
+            # Determine working status
             if custom_working is not None:
                 is_working = staff_id_val in custom_working
             else:
                 is_working = row['working_this_week']
             
-            # Visual properties stored in data (stylesheet will override based on working status)
+            # Visual properties (stylesheet will override based on working status)
             opacity = 1.0 if is_working else 0.3
             border_width = 3 if is_working else 1
             border_color = '#2c3e50' if is_working else '#999'
@@ -390,6 +426,7 @@ def create_network_for_week(staff_impacts, department, week, metric='morale', cu
                 },
                 'position': {'x': pos_x, 'y': pos_y}
             })
+            
             # Add edge: always if include_all_edges, otherwise only if working
             if include_all_edges or is_working:
                 elements.append({'data': {'source': role_id, 'target': staff_id}})
@@ -550,7 +587,7 @@ def create_config_comparison_chart(saved_configs, avg_morale, avg_satisfaction):
     
     fig = go.Figure()
     
-    # Morale bars (blue)
+    # Morale bars (blue - consistent with week context chart)
     fig.add_trace(go.Bar(
         name='Morale',
         x=morale_x,
@@ -562,12 +599,12 @@ def create_config_comparison_chart(saved_configs, avg_morale, avg_satisfaction):
         width=bar_width
     ))
     
-    # Satisfaction bars (green)
+    # Satisfaction bars (purple - distinct from green/red good/bad indicators)
     fig.add_trace(go.Bar(
         name='Satisf.',
         x=satisfaction_x,
         y=satisfaction_values,
-        marker_color='#27ae60',
+        marker_color='#9b59b6',
         text=[f'{v:.0f}' for v in satisfaction_values],
         textposition='inside',
         textfont=dict(size=8, color='white'),
@@ -710,6 +747,385 @@ def create_week_context_chart(services_df, department, selected_week, metric='st
     return fig
 
 
+def create_quality_mini_sparkline(services_df, selected_depts, week_range, highlighted_week=None, hide_anomalies=False, highlight_color=None):
+    """
+    Create a compact MORALE-ONLY sparkline showing ALL selected departments.
+    
+    Justification (Munzner M4_04 - Coordinated Multiple Views):
+    - Multiple lines with consistent colors match Overview widget
+    - Shaded region shows selected range (filter context)
+    - Vertical marker highlights hovered week from Overview (linking)
+    - Same color encoding across views reduces cognitive load (M3_03 Eyes beat Memory)
+    
+    Design changes (Cleveland & McGill accuracy):
+    - Dynamic x-axis ticks based on week range for precise position reading
+    - More ticks = easier week identification without mental interpolation
+    
+    Args:
+        selected_depts: List of department IDs to display
+        hide_anomalies: If True, exclude anomaly weeks from display (Filter - Yi et al.)
+        highlight_color: Color for the vertical week highlight line (matches hovered dept)
+    """
+    from jbi100_app.config import DEPT_COLORS
+    
+    week_min, week_max = week_range
+    
+    if not selected_depts:
+        fig = go.Figure()
+        fig.update_layout(margin=dict(l=0, r=0, t=0, b=0), height=100)
+        return fig
+    
+    fig = go.Figure()
+    
+    # Add shaded region for selected week range
+    fig.add_vrect(
+        x0=week_min - 0.5, x1=week_max + 0.5,
+        fillcolor="rgba(52, 152, 219, 0.1)",
+        line_width=0,
+        layer="below"
+    )
+    
+    # Add a line for each selected department
+    for dept in selected_depts:
+        dept_data = services_df[services_df['service'] == dept].sort_values('week')
+        
+        # Filter out anomaly weeks if requested
+        if hide_anomalies:
+            dept_data = dept_data[~dept_data['week'].isin(ANOMALY_WEEKS)]
+        
+        if dept_data.empty:
+            continue
+        
+        color = DEPT_COLORS.get(dept, '#3498db')
+        
+        fig.add_trace(go.Scatter(
+            x=dept_data['week'],
+            y=dept_data['staff_morale'],
+            mode='lines',
+            line=dict(color=color, width=2),
+            name=dept.replace('_', ' ').title()[:8],
+            hovertemplate='W%{x}: %{y:.0f}<extra></extra>'
+        ))
+    
+    # Add highlighted week marker if provided (Linking & Brushing M4_04)
+    if highlighted_week is not None:
+        show_highlight = True
+        if hide_anomalies and highlighted_week in ANOMALY_WEEKS:
+            show_highlight = False
+        
+        if show_highlight:
+            # Use provided color or default to orange
+            line_color = highlight_color or "#e67e22"
+            
+            # Vertical line at hovered week (spans all department lines)
+            fig.add_vline(
+                x=highlighted_week, 
+                line_color=line_color,
+                line_width=2,
+                line_dash="solid"
+            )
+    
+    # Dynamic x-axis ticks based on week range (Cleveland & McGill: position accuracy)
+    # Goal: 5-8 ticks for optimal readability without clutter
+    week_span = week_max - week_min + 1
+    if week_span <= 12:
+        tick_interval = 2   # Every 2 weeks for short ranges (W1-12)
+    elif week_span <= 26:
+        tick_interval = 4   # Every 4 weeks (~monthly)
+    else:
+        tick_interval = 8   # Every 8 weeks for full year
+    
+    # Generate tick values starting from week_min
+    tick_vals = list(range(week_min, week_max + 1, tick_interval))
+    # Always include last week if not already present
+    if week_max not in tick_vals:
+        tick_vals.append(week_max)
+    tick_text = [f'W{w}' for w in tick_vals]
+    
+    fig.update_layout(
+        margin=dict(l=28, r=8, t=4, b=18),  # Reduced top margin (title moved to widget header)
+        height=100,  # Increased from 80 (reclaimed space from bottom hint)
+        plot_bgcolor='rgba(0,0,0,0)',
+        paper_bgcolor='rgba(0,0,0,0)',
+        showlegend=False,
+        # Title removed - now in widget header (Tufte: maximize data-ink ratio)
+        xaxis=dict(
+            showgrid=False,
+            showticklabels=True,
+            tickvals=tick_vals,
+            ticktext=tick_text,
+            tickfont=dict(size=8, color='#64748b'),
+            zeroline=False,
+            fixedrange=True,
+            range=[week_min - 0.5, week_max + 0.5]  # Dynamic range based on selection
+        ),
+        yaxis=dict(
+            showgrid=True,
+            gridcolor='rgba(0,0,0,0.05)',
+            showticklabels=True,
+            tickvals=[0, 25, 50, 75, 100],  # Quartiles for better precision
+            ticktext=['0', '25', '50', '75', '100'],
+            tickfont=dict(size=7, color='#94a3b8'),
+            zeroline=False,
+            range=[0, 105],  # Full 0-100 range (Tufte: graphical integrity)
+            fixedrange=True
+        ),
+        hovermode='x unified'
+    )
+    
+    return fig
+
+
+def create_quality_mini(services_df, staff_schedule_df, selected_depts, week_range, hide_anomalies=False):
+    """
+    Create minimized quality widget - STAFF-FOCUSED (not duplicating Overview).
+    
+    Design Justification (Munzner):
+    - Complementary info: Overview shows satisfaction trends, Quality shows staff/morale
+    - Shneiderman's Mantra: "Overview first" - summary without expansion
+    - Yi et al. Abstract/Elaborate: Click to expand for network details
+    - M4_04 Linking & Brushing: KPIs update on hover from Overview widget
+    - Tufte's Data-Ink Ratio: Interaction hint moved to header to maximize chart space
+    
+    Content (unique to Quality - not in Overview):
+    - Staff composition by role
+    - Morale metrics (updates on hover - shows week value or avg)
+    - Morale sparkline (now larger with more x-axis ticks)
+    
+    Args:
+        hide_anomalies: If True, exclude anomaly weeks from calculations/display (Filter - Yi et al.)
+    """
+    if not selected_depts:
+        return html.Div([
+            html.Div("👥 Staff Quality", 
+                     style={"fontWeight": "600", "fontSize": "14px", "color": "#2c3e50"}),
+            html.Div("Select a department", style={"fontSize": "11px", "color": "#999"})
+        ])
+    
+    # Use first department for reference, but calculate aggregate stats
+    department = selected_depts[0]
+    week_min, week_max = week_range
+    
+    # Get data for ALL selected departments in range (for true aggregate)
+    all_dept_data = services_df[
+        (services_df['service'].isin(selected_depts)) &
+        (services_df['week'] >= week_min) &
+        (services_df['week'] <= week_max)
+    ]
+    
+    # Filter out anomaly weeks if requested (Yi et al. Filter interaction)
+    if hide_anomalies:
+        all_dept_data = all_dept_data[~all_dept_data['week'].isin(ANOMALY_WEEKS)]
+    
+    # Calculate AGGREGATE morale KPIs across all selected departments
+    # This gives true overview (Shneiderman's mantra: overview first)
+    if not all_dept_data.empty:
+        avg_morale = all_dept_data['staff_morale'].mean()  # True average across all
+        min_morale = all_dept_data['staff_morale'].min()
+        max_morale = all_dept_data['staff_morale'].max()
+    else:
+        avg_morale = min_morale = max_morale = 0
+    
+    # Build per-department info for display
+    dept_info = []
+    total_staff = 0
+    for dept in selected_depts:
+        dept_staff = staff_schedule_df[staff_schedule_df['service'] == dept]
+        dept_count = dept_staff['staff_id'].nunique()
+        
+        # Get avg morale for this dept in range
+        dept_morale_data = services_df[
+            (services_df['service'] == dept) &
+            (services_df['week'] >= week_min) &
+            (services_df['week'] <= week_max)
+        ]
+        if hide_anomalies:
+            dept_morale_data = dept_morale_data[~dept_morale_data['week'].isin(ANOMALY_WEEKS)]
+        
+        dept_avg_morale = dept_morale_data['staff_morale'].mean() if not dept_morale_data.empty else 0
+        
+        dept_info.append({
+            'dept': dept,
+            'staff': dept_count,
+            'morale': dept_avg_morale,
+            'color': CONFIG_DEPT_COLORS.get(dept, '#3498db'),
+            'label': DEPT_LABELS_SHORT.get(dept, dept[:3])
+        })
+        total_staff += dept_count
+    
+    # Create sparkline with ALL selected departments
+    sparkline_fig = create_quality_mini_sparkline(
+        services_df, selected_depts, week_range, 
+        highlighted_week=None, hide_anomalies=hide_anomalies
+    )
+    
+    # Format header based on number of departments
+    if len(selected_depts) == 1:
+        header_subtitle = f"{department.replace('_', ' ').title()} • W{week_min}-{week_max}"
+    else:
+        header_subtitle = f"{len(selected_depts)} depts • W{week_min}-{week_max}"
+    
+    return html.Div(
+        style={"height": "100%", "display": "flex", "flexDirection": "column"},
+        children=[
+            # Header row: Title + expand link (Tufte: maximize data-ink by moving hint here)
+            html.Div(
+                style={
+                    "display": "flex", 
+                    "justifyContent": "space-between", 
+                    "alignItems": "center",
+                    "marginBottom": "2px"
+                },
+                children=[
+                    html.Span(
+                        "👥 Staff Quality",  # Clearer title (Munzner: meaningful labels)
+                        style={"fontWeight": "600", "fontSize": "14px", "color": "#2c3e50"}
+                    ),
+                    # Expand hint moved here - saves ~15% vertical space (Tufte: data-ink ratio)
+                    html.Span(
+                        "↗ Network",
+                        style={
+                            "fontSize": "9px", 
+                            "color": "#0ea5e9", 
+                            "cursor": "pointer",
+                            "fontWeight": "500"
+                        }
+                    )
+                ]
+            ),
+            html.Div(
+                header_subtitle,
+                style={"fontSize": "10px", "color": "#64748b", "marginBottom": "4px"}
+            ),
+            
+            # Compact KPI row with per-department breakdown
+            html.Div(
+                style={
+                    "display": "flex",
+                    "gap": "4px",
+                    "backgroundColor": "#f8f9fa",
+                    "borderRadius": "6px",
+                    "padding": "4px 6px",
+                    "marginBottom": "4px",
+                    "alignItems": "center"
+                },
+                children=[
+                    # Staff count section
+                    html.Div(
+                        id="quality-mini-staff-section",
+                        children=[
+                            html.Div(
+                                id="quality-mini-staff-header",
+                                children=[
+                                    html.Span(
+                                        id="quality-mini-staff-total",
+                                        children=f"{total_staff}",
+                                        style={"fontSize": "13px", "fontWeight": "700", "color": "#2c3e50"}
+                                    ),
+                                    html.Span(
+                                        id="quality-mini-staff-label",
+                                        children=" staff",
+                                        style={"fontSize": "8px", "color": "#64748b"}
+                                    ),
+                                ],
+                                style={"marginBottom": "2px"}
+                            ),
+                            # Per-dept breakdown
+                            html.Div(
+                                id="quality-mini-staff-breakdown",
+                                children=[
+                                    html.Span([
+                                        html.Span(f"{info['staff']}", style={
+                                            "color": info['color'], "fontWeight": "600", "fontSize": "9px"
+                                        }),
+                                        html.Span(f" {info['label']} ", style={"fontSize": "7px", "color": "#64748b"})
+                                    ]) for info in dept_info
+                                ] if len(selected_depts) > 1 else [],
+                                style={"lineHeight": "1.2"}
+                            )
+                        ],
+                        style={"flex": "1", "textAlign": "center", "borderRight": "1px solid #e2e8f0"}
+                    ),
+                    
+                    # Morale section
+                    html.Div(
+                        id="quality-mini-morale-section",
+                        children=[
+                            html.Div(
+                                id="quality-mini-morale-header",
+                                children=[
+                                    html.Span(
+                                        id="quality-mini-morale-value",
+                                        children=f"{avg_morale:.0f}",
+                                        style={"fontSize": "13px", "fontWeight": "700", "color": "#0ea5e9"}
+                                    ),
+                                    html.Span(
+                                        id="quality-mini-morale-label",
+                                        children=" avg morale",
+                                        style={"fontSize": "8px", "color": "#64748b"}
+                                    ),
+                                ],
+                                style={"marginBottom": "2px"}
+                            ),
+                            # Per-dept morale breakdown
+                            html.Div(
+                                id="quality-mini-morale-breakdown",
+                                children=[
+                                    html.Span([
+                                        html.Span(f"{info['morale']:.0f}", style={
+                                            "color": info['color'], "fontWeight": "600", "fontSize": "9px"
+                                        }),
+                                        html.Span(f" {info['label']} ", style={"fontSize": "7px", "color": "#64748b"})
+                                    ]) for info in dept_info
+                                ] if len(selected_depts) > 1 else [],
+                                style={"lineHeight": "1.2"}
+                            )
+                        ],
+                        style={"flex": "1", "textAlign": "center"}
+                    ),
+                ]
+            ),
+            
+            # Hidden store for department context (used by callback)
+            dcc.Store(id="quality-mini-dept-store", data={
+                "selected_depts": selected_depts,
+                "department": department,
+                "avg_morale": avg_morale,
+                "min_morale": min_morale,
+                "max_morale": max_morale,
+                "hide_anomalies": hide_anomalies,
+                "total_staff": total_staff,
+                "dept_info": dept_info  # Per-dept staff/morale/color
+            }),
+            
+            # Morale sparkline - now uses full remaining space (no bottom hint)
+            # Chart title "Morale Trend" added as small label above
+            html.Div(
+                style={"flex": "1", "minHeight": "60px", "display": "flex", "flexDirection": "column"},
+                children=[
+                    html.Div(
+                        "Morale Trend",  # Clear chart title (Munzner: label what user sees)
+                        style={
+                            "fontSize": "9px", 
+                            "color": "#64748b", 
+                            "fontWeight": "500",
+                            "marginBottom": "2px",
+                            "textAlign": "center"
+                        }
+                    ),
+                    dcc.Graph(
+                        id="quality-mini-sparkline",
+                        figure=sparkline_fig,
+                        config={"displayModeBar": False, "staticPlot": True},
+                        style={"flex": "1", "width": "100%", "minHeight": "0"}
+                    )
+                ]
+            )
+            # Bottom hint REMOVED - now in header (Tufte: maximize data-ink ratio)
+        ]
+    )
+
+
 def create_quality_widget(services_df, staff_schedule_df, selected_depts, week_range):
     """Create quality widget with interactive network."""
     
@@ -777,6 +1193,7 @@ def create_quality_widget(services_df, staff_schedule_df, selected_depts, week_r
                 html.Span(f"{len(all_impacts)} staff | {morale_params['model']} / {sat_params['model']}", 
                           style={'fontSize': '9px', 'color': '#7f8c8d'})
             ]),
+            # Working count (toggle moved to legend area)
             html.Div(id='working-count-display', children=[
                 html.Span("# assigned: ", style={'fontSize': '10px', 'color': '#7f8c8d'}),
                 html.Span(f"{working_count}", style={'fontSize': '13px', 'color': '#27ae60', 'fontWeight': 'bold'})
@@ -824,15 +1241,49 @@ def create_quality_widget(services_df, staff_schedule_df, selected_depts, week_r
                             )
                         ])
                     ]),
-                    # Legend
-                    html.Div(style={'flexShrink': '0', 'marginTop': '4px', 'fontSize': '8px', 'textAlign': 'center'}, children=[
-                        html.Span("●", style={'color': ROLE_COLORS['doctor'], 'marginRight': '2px'}),
-                        html.Span("Doc ", style={'marginRight': '6px'}),
-                        html.Span("●", style={'color': ROLE_COLORS['nurse'], 'marginRight': '2px'}),
-                        html.Span("Nurse ", style={'marginRight': '6px'}),
-                        html.Span("●", style={'color': ROLE_COLORS['nursing_assistant'], 'marginRight': '2px'}),
-                        html.Span("Asst", style={'marginRight': '10px'}),
-                        html.Span("| Size=|Coef| | Bright=Assigned", style={'color': '#7f8c8d'})
+                    # Legend + Impact toggle (Gestalt proximity: controls near what they affect)
+                    html.Div(style={'flexShrink': '0', 'marginTop': '4px', 'fontSize': '8px', 'textAlign': 'center',
+                                    'display': 'flex', 'justifyContent': 'center', 'alignItems': 'center', 'gap': '8px', 'flexWrap': 'wrap'}, children=[
+                        # Role legend
+                        html.Div(style={'display': 'flex', 'alignItems': 'center', 'gap': '6px'}, children=[
+                            html.Span("●", style={'color': ROLE_COLORS['doctor']}),
+                            html.Span("Doc", style={'marginRight': '4px'}),
+                            html.Span("●", style={'color': ROLE_COLORS['nurse']}),
+                            html.Span("Nurse", style={'marginRight': '4px'}),
+                            html.Span("●", style={'color': ROLE_COLORS['nursing_assistant']}),
+                            html.Span("Asst")
+                        ]),
+                        # Separator
+                        html.Span("|", style={'color': '#ccc'}),
+                        # Size encoding explanation + toggle
+                        html.Div(style={'display': 'flex', 'alignItems': 'center', 'gap': '4px'}, children=[
+                            html.Span("Size=", style={'color': '#7f8c8d'}),
+                            html.Button(
+                                "Morale",
+                                id='impact-morale-btn',
+                                n_clicks=0,
+                                style={
+                                    'padding': '2px 6px', 'fontSize': '8px', 'fontWeight': '600',
+                                    'backgroundColor': '#3498db', 'color': 'white',
+                                    'border': 'none', 'borderRadius': '3px 0 0 3px', 'cursor': 'pointer'
+                                }
+                            ),
+                            html.Button(
+                                "Satisf.",
+                                id='impact-satisfaction-btn',
+                                n_clicks=0,
+                                style={
+                                    'padding': '2px 6px', 'fontSize': '8px', 'fontWeight': '500',
+                                    'backgroundColor': '#ecf0f1', 'color': '#7f8c8d',
+                                    'border': 'none', 'borderRadius': '0 3px 3px 0', 'cursor': 'pointer'
+                                }
+                            ),
+                            html.Span("impact", style={'color': '#7f8c8d', 'marginLeft': '2px'})
+                        ]),
+                        # Separator
+                        html.Span("|", style={'color': '#ccc'}),
+                        # Brightness + line encoding
+                        html.Span("● Bright + line = Assigned", style={'color': '#7f8c8d'})
                     ])
                 ]
             ),

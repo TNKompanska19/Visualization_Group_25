@@ -29,6 +29,55 @@ ANOMALY_WEEKS = [3, 6, 9, 12, 15, 18, 21, 24, 27, 30, 33, 36, 39, 42, 45, 48, 51
 def register_quality_callbacks():
     """Register quality callbacks."""
     
+    # =========================================================================
+    # IMPACT METRIC TOGGLE
+    # Switches between morale and satisfaction coefficients for node sizing
+    # Theory: Shneiderman's "details on demand" - user chooses what to focus on
+    # =========================================================================
+    @callback(
+        [Output('impact-metric-store', 'data'),
+         Output('impact-morale-btn', 'style'),
+         Output('impact-satisfaction-btn', 'style')],
+        [Input('impact-morale-btn', 'n_clicks'),
+         Input('impact-satisfaction-btn', 'n_clicks')],
+        State('impact-metric-store', 'data'),
+        prevent_initial_call=False
+    )
+    def toggle_impact_metric(morale_clicks, sat_clicks, current_metric):
+        """Toggle between morale and satisfaction impact metrics."""
+        triggered = ctx.triggered_id
+        
+        # Default styles
+        active_style = {
+            'padding': '3px 8px', 'fontSize': '9px', 'fontWeight': '600',
+            'backgroundColor': '#3498db', 'color': 'white',
+            'border': 'none', 'cursor': 'pointer'
+        }
+        inactive_style = {
+            'padding': '3px 8px', 'fontSize': '9px', 'fontWeight': '500',
+            'backgroundColor': '#ecf0f1', 'color': '#7f8c8d',
+            'border': 'none', 'cursor': 'pointer'
+        }
+        
+        # Determine new metric based on what was clicked
+        if triggered == 'impact-satisfaction-btn':
+            new_metric = 'satisfaction'
+        elif triggered == 'impact-morale-btn':
+            new_metric = 'morale'
+        else:
+            # Initial load - use current or default
+            new_metric = current_metric or 'morale'
+        
+        # Set button styles based on active metric
+        if new_metric == 'morale':
+            morale_style = {**active_style, 'borderRadius': '4px 0 0 4px'}
+            sat_style = {**inactive_style, 'borderRadius': '0 4px 4px 0'}
+        else:
+            morale_style = {**inactive_style, 'borderRadius': '4px 0 0 4px'}
+            sat_style = {**active_style, 'borderRadius': '0 4px 4px 0'}
+        
+        return new_metric, morale_style, sat_style
+    
     # Clientside callback for instant stylesheet updates (preserves positions)
     clientside_callback(
         """
@@ -61,10 +110,10 @@ def register_quality_callbacks():
                 {selector: '[node_type = "staff"]',
                  style: {
                      'background-color': 'data(color)', 'label': 'data(label)', 'color': '#2c3e50',
-                     'font-size': '6px', 'font-weight': '500',
+                     'font-size': '8px', 'font-weight': '500',
                      'width': 'data(size)', 'height': 'data(size)', 'shape': 'ellipse',
-                     'opacity': 0.3, 'border-width': 1,
-                     'border-color': '#999', 'text-valign': 'center', 'text-halign': 'center'
+                     'opacity': 0.3, 'border-width': 0,
+                     'text-valign': 'center', 'text-halign': 'center'
                  }},
                 {selector: 'edge[source ^= "role_"]',
                  style: {'width': 1, 'line-color': '#ddd', 'opacity': 0, 'curve-style': 'bezier'}},
@@ -78,7 +127,7 @@ def register_quality_callbacks():
                 var staffId = workingIds[i];
                 stylesheet.push({
                     selector: '[id = "staff_' + staffId + '"]',
-                    style: {'opacity': 1.0, 'border-width': 3, 'border-color': '#2c3e50'}
+                    style: {'opacity': 1.0}
                 });
                 stylesheet.push({
                     selector: 'edge[target = "staff_' + staffId + '"]',
@@ -108,20 +157,22 @@ def register_quality_callbacks():
          Output('selected-week-display', 'children'),
          Output('working-ids-store', 'data')],
         [Input('quality-week-slider', 'value'),
-         Input('dept-filter', 'value'),
+         Input('primary-dept-store', 'data'),  # Changed: Use primary dept instead of dept-filter
          Input('hide-anomalies-toggle', 'value'),
-         Input('staff-network-weekly', 'tapNodeData')],
+         Input('staff-network-weekly', 'tapNodeData'),
+         Input('impact-metric-store', 'data')],  # Added: Listen to metric toggle
         [State('custom-team-store', 'data'),
          State('dept-averages-store', 'data'),
          State('current-department-store', 'data'),
          State('staff-network-weekly', 'elements')]
     )
-    def update_network_and_charts(selected_week, selected_depts, hide_anomalies_list, 
-                                   tap_data, custom_team, dept_averages, stored_dept, current_elements):
+    def update_network_and_charts(selected_week, primary_dept, hide_anomalies_list, 
+                                   tap_data, impact_metric, custom_team, dept_averages, stored_dept, current_elements):
         """Handle week changes, department changes, and node clicks."""
         
         hide_anomalies = "hide" in (hide_anomalies_list or [])
         slider_marks = create_week_slider_marks(hide_anomalies)
+        metric = impact_metric or 'morale'  # Default to morale
         
         # Empty defaults
         empty_fig = go.Figure()
@@ -135,10 +186,11 @@ def register_quality_callbacks():
         ])
         default_store = {'active': False, 'working_ids': []}
         
-        if not selected_depts or selected_week is None:
+        # Use primary dept (from new store) instead of selected_depts[0]
+        if not primary_dept or selected_week is None:
             return [], selected_week or 1, slider_marks, empty_context, empty_fig, empty_fig, default_count, default_store, "", str(selected_week or 1), []
         
-        department = selected_depts[0]
+        department = primary_dept  # Changed: Use primary dept directly
         
         # Get what triggered this callback
         triggered_id = ctx.triggered_id
@@ -187,9 +239,17 @@ def register_quality_callbacks():
         context_fig = create_week_context_chart(_services_df, department, adjusted_week)
         
         # Determine if we need to regenerate elements
+        # Option B: Week changes do NOT regenerate elements (preserves positions)
+        # Only regenerate when: dept changes, metric changes, or no elements exist
         node_clicked = 'tapNodeData' in triggered_prop and tap_data is not None
-        need_new_elements = (triggered_id in ['quality-week-slider', 'dept-filter'] or 
+        metric_changed = triggered_id == 'impact-metric-store'
+        week_changed = triggered_id == 'quality-week-slider'
+        
+        # CRITICAL: Remove week-slider from element regeneration triggers
+        # This implements Option B: preserve node positions on week change
+        need_new_elements = (triggered_id == 'primary-dept-store' or 
                             dept_changed or 
+                            metric_changed or
                             current_elements is None or 
                             len(current_elements) == 0)
         
@@ -229,11 +289,18 @@ def register_quality_callbacks():
                 context_fig = no_update
         
         elif need_new_elements:
-            # Week or dept changed - reset and regenerate elements
+            # Dept or metric changed - reset and regenerate elements
             working_ids = week_impacts[week_impacts['working_this_week']]['staff_id'].tolist()
             custom_team = {'active': False, 'working_ids': working_ids}
-            elements = create_network_for_week(week_impacts, department, adjusted_week, 'morale', 
+            elements = create_network_for_week(week_impacts, department, adjusted_week, metric,
                                                custom_working=None, include_all_edges=True)
+        
+        elif week_changed:
+            # OPTION B: Week changed - reset custom team, update working_ids, but DON'T regenerate elements
+            # This preserves node positions while showing new week's actual assignments
+            working_ids = week_impacts[week_impacts['working_this_week']]['staff_id'].tolist()
+            custom_team = {'active': False, 'working_ids': working_ids}
+            elements = no_update  # Keep existing elements (positions preserved)
         
         else:
             # Initial load or hide-anomalies toggle
@@ -320,7 +387,7 @@ def register_quality_callbacks():
         # Create new config entry
         new_config = {
             'name': config_name,
-            'working_ids': working_ids,
+            'working_ids': working_ids,  # Store the actual staff IDs for restore
             'morale': float(morale_val),
             'satisfaction': float(sat_val),
             'staff_count': len(working_ids),
@@ -363,7 +430,7 @@ def register_quality_callbacks():
         Input('saved-configs-store', 'data')
     )
     def update_saved_configs_list(saved_configs):
-        """Update the display of saved configurations."""
+        """Update the display of saved configurations - now clickable to restore."""
         if not saved_configs:
             return html.Span("No saved configs", style={'color': '#bdc3c7', 'fontStyle': 'italic'})
         
@@ -373,13 +440,23 @@ def register_quality_callbacks():
             config_items.append(
                 html.Div(
                     style={'display': 'flex', 'justifyContent': 'space-between', 'alignItems': 'center',
-                           'padding': '2px 0', 'borderBottom': '1px solid #f0f0f0'},
+                           'padding': '3px 4px', 'borderBottom': '1px solid #f0f0f0',
+                           'cursor': 'pointer', 'borderRadius': '3px',
+                           'transition': 'background-color 0.15s'},
                     children=[
-                        html.Span([
-                            html.Span(f"{pred_indicator} ", style={'fontSize': '8px'}),
-                            html.Span(config['name'], style={'fontWeight': '500'}),
-                            html.Span(f" ({config['staff_count']})", style={'color': '#95a5a6'})
-                        ]),
+                        # Clickable config name (load on click)
+                        html.Div(
+                            id={'type': 'load-config-btn', 'index': i},
+                            n_clicks=0,
+                            children=[
+                                html.Span(f"{pred_indicator} ", style={'fontSize': '8px'}),
+                                html.Span(config['name'], style={'fontWeight': '500'}),
+                                html.Span(f" ({config['staff_count']})", style={'color': '#95a5a6'})
+                            ],
+                            style={'flex': '1', 'cursor': 'pointer'},
+                            title=f"Click to load: {config['name']}"
+                        ),
+                        # Delete button
                         html.Button('✕', id={'type': 'delete-config-btn', 'index': i},
                                     style={'background': 'none', 'border': 'none', 'color': '#e74c3c',
                                            'cursor': 'pointer', 'fontSize': '10px', 'padding': '0 3px'})
@@ -401,3 +478,38 @@ def register_quality_callbacks():
         avg_satisfaction = dept_averages.get('satisfaction', 0) if dept_averages else 0
         
         return create_config_comparison_chart(saved_configs or [], avg_morale, avg_satisfaction)
+    
+    # Callback for loading a saved configuration
+    @callback(
+        [Output('custom-team-store', 'data', allow_duplicate=True),
+         Output('working-ids-store', 'data', allow_duplicate=True)],
+        Input({'type': 'load-config-btn', 'index': ALL}, 'n_clicks'),
+        State('saved-configs-store', 'data'),
+        prevent_initial_call=True
+    )
+    def load_configuration(n_clicks_list, saved_configs):
+        """
+        Load a saved configuration when clicked.
+        
+        This restores the working_ids from the saved config,
+        and the clientside callback will update the stylesheet.
+        """
+        # Check if any button was actually clicked
+        if not n_clicks_list or not any(n for n in n_clicks_list if n) or not saved_configs:
+            return no_update, no_update
+        
+        # Find which config was clicked
+        triggered = ctx.triggered_id
+        if triggered and 'index' in triggered:
+            index_to_load = triggered['index']
+            if index_to_load < len(saved_configs):
+                config = saved_configs[index_to_load]
+                working_ids = config.get('working_ids', [])
+                
+                # Return updated custom team store and working ids
+                return (
+                    {'active': True, 'working_ids': working_ids},
+                    working_ids
+                )
+        
+        return no_update, no_update
