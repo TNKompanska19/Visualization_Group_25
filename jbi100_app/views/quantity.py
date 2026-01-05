@@ -3,8 +3,15 @@ Quantity View - MERGED VERSION
 JBI100 Visualization - Group 25
 
 MERGED: Colleague's T2 controls + Your T3 interactions
-- T2: Bed Allocation with grouped/separate, count/rate, selection, bed distribution modal
+- T2: Bed Allocation with grouped/separate, count/rate, selection, toggle (Scatter ↔ Bed Distribution)
 - T3: Stay Duration with Occupancy + toggle (LOS ↔ Gantt)
+
+Visual Encoding Justification:
+- T2 Grouped Bar: Compare beds vs refused across weeks (Munzner M4_01 - bar chart for categorical comparison)
+- T2 Scatter Quadrant: Explore dependency between capacity and refusal rate (Munzner M5_01 - scatterplot for correlation)
+- T2 Bed Distribution: How beds are distributed across departments (Munzner M4_01 - bar chart)
+- T3 Line Chart: Find trends in occupancy over ordered time (Munzner M4_01 - line chart for ordered key)
+- T3 Gantt Chart: Emphasize temporal overlaps and patient stay durations (Munzner M6_06)
 """
 
 from dash import html, dcc
@@ -25,9 +32,12 @@ def create_quantity_expanded(services_df, patients_df, selected_depts, week_rang
         ],
     )
 
+    # IMPORTANT: persistence=True keeps the tab state when re-rendering
     tabs = dcc.Tabs(
         id="quantity-tabs",
         value="tab-t2",
+        persistence=True,  # FIX #1: Persist tab selection across re-renders
+        persistence_type="session",
         style={"marginBottom": "6px"},
         children=[
             dcc.Tab(
@@ -49,9 +59,11 @@ def create_quantity_expanded(services_df, patients_df, selected_depts, week_rang
     selection_store = dcc.Store(id="quantity-selected-week", data=None)
 
     # ============================================
-    # T2: BED ALLOCATION (COLLEAGUE'S CONTROLS)
+    # T2: BED ALLOCATION
+    # Features: Grouped/Separate bars, Count/Rate metric, Toggle (Scatter ↔ Bed Distribution)
     # ============================================
 
+    # FIX #4: Removed Clear Selection button
     t2_controls = html.Div(
         style={
             "padding": "8px 10px",
@@ -105,39 +117,21 @@ def create_quantity_expanded(services_df, patients_df, selected_depts, week_rang
                     ),
                 ],
             ),
-            html.Div(
-                style={"display": "flex", "alignItems": "center", "gap": "10px"},
-                children=[
-                    html.Button(
-                        "🧽 Clear selection",
-                        id="t2-clear-selection-btn",
-                        n_clicks=0,
-                        style={
-                            "padding": "6px 12px",
-                            "backgroundColor": "#ecf0f1",
-                            "border": "1px solid #d0d7de",
-                            "borderRadius": "6px",
-                            "cursor": "pointer",
-                            "fontSize": "11px",
-                            "fontWeight": "500",
-                        },
-                    ),
-                    html.Button(
-                        "📊 Bed Distribution",
-                        id="show-distribution-btn",
-                        n_clicks=0,
-                        style={
-                            "padding": "6px 12px",
-                            "backgroundColor": "#3498db",
-                            "color": "white",
-                            "border": "none",
-                            "borderRadius": "6px",
-                            "cursor": "pointer",
-                            "fontSize": "11px",
-                            "fontWeight": "500",
-                        },
-                    ),
-                ],
+            # Toggle button for right panel (Scatter ↔ Bed Distribution)
+            html.Button(
+                "📊 Bed Distribution",
+                id="t2-toggle-stacked-btn",
+                n_clicks=0,
+                style={
+                    "padding": "6px 12px",
+                    "backgroundColor": "#3498db",
+                    "color": "white",
+                    "border": "none",
+                    "borderRadius": "6px",
+                    "cursor": "pointer",
+                    "fontSize": "11px",
+                    "fontWeight": "500",
+                },
             ),
         ],
     )
@@ -148,8 +142,16 @@ def create_quantity_expanded(services_df, patients_df, selected_depts, week_rang
         style={"height": "100%"},
     )
 
-    t2_summary = dcc.Graph(
+    # Default detail chart (Scatter/Summary - will be swapped by toggle)
+    t2_detail_chart = dcc.Graph(
         id="t2-detail-chart",
+        config={"displayModeBar": True, "displaylogo": False},
+        style={"height": "100%"},
+    )
+
+    # Bed Distribution chart (alternative view - created dynamically by toggle)
+    t2_stacked_chart = dcc.Graph(
+        id="t2-stacked-chart",
         config={"displayModeBar": True, "displaylogo": False},
         style={"height": "100%"},
     )
@@ -163,71 +165,20 @@ def create_quantity_expanded(services_df, patients_df, selected_depts, week_rang
                 style={"flex": "1", "display": "flex", "gap": "10px", "minHeight": "0"},
                 children=[
                     html.Div(style={"flex": "0.65", "minWidth": "0"}, children=[t2_weekly]),
-                    html.Div(style={"flex": "0.35", "minWidth": "0"}, children=[t2_summary]),
-                ],
-            ),
-            # Bed Distribution Modal (stays as modal, not in toggle)
-            html.Div(
-                id="distribution-modal",
-                style={"display": "none"},
-                children=[
+                    # Switchable container for right panel (like T3's LOS/Gantt toggle)
                     html.Div(
-                        style={
-                            "position": "fixed",
-                            "top": "0",
-                            "left": "0",
-                            "width": "100%",
-                            "height": "100%",
-                            "backgroundColor": "rgba(0,0,0,0.5)",
-                            "zIndex": "1000",
-                            "display": "flex",
-                            "alignItems": "center",
-                            "justifyContent": "center",
-                        },
-                        children=[
-                            html.Div(
-                                style={
-                                    "backgroundColor": "white",
-                                    "borderRadius": "12px",
-                                    "padding": "20px",
-                                    "width": "600px",
-                                    "maxHeight": "80vh",
-                                    "overflow": "auto",
-                                    "boxShadow": "0 8px 32px rgba(0,0,0,0.2)",
-                                    "position": "relative",
-                                },
-                                children=[
-                                    html.Button(
-                                        "✕",
-                                        id="close-distribution-btn",
-                                        n_clicks=0,
-                                        style={
-                                            "position": "absolute",
-                                            "top": "10px",
-                                            "right": "10px",
-                                            "background": "none",
-                                            "border": "none",
-                                            "fontSize": "24px",
-                                            "cursor": "pointer",
-                                            "color": "#999",
-                                        },
-                                    ),
-                                    dcc.Graph(
-                                        id="distribution-chart",
-                                        config={"displayModeBar": True, "displaylogo": False},
-                                        style={"height": "500px"},
-                                    ),
-                                ],
-                            )
-                        ],
-                    )
+                        id="t2-switchable-container",
+                        style={"flex": "0.35", "minWidth": "0"},
+                        children=[t2_detail_chart]  # Default: Scatter/Summary chart
+                    ),
                 ],
             ),
         ],
     )
 
     # ============================================
-    # T3: STAY DURATION (YOUR INTERACTIVE CHARTS)
+    # T3: STAY DURATION (INTERACTIVE CHARTS)
+    # Features: Occupancy line, Toggle (LOS ↔ Gantt), Bidirectional linking
     # ============================================
 
     # T3 graphs
