@@ -8,7 +8,7 @@ Callbacks for the Overview widget (T1):
 - Histogram updates (detail zoom)
 """
 
-from dash import callback, Output, Input, State, html
+from dash import callback, Output, Input, State, html, ctx
 from dash.exceptions import PreventUpdate
 import numpy as np
 
@@ -128,6 +128,40 @@ def register_overview_callbacks():
     """Register all overview widget callbacks."""
     
     # =========================================================================
+    # VIEWPORT TRACKING (for pan/zoom sync)
+    # Keeps visible-week-range in sync with actual chart viewport
+    # =========================================================================
+    @callback(
+        Output("visible-week-range", "data"),
+        Input("overview-chart", "relayoutData"),
+        State("current-week-range", "data"),
+        prevent_initial_call=True  # Don't run until chart exists
+    )
+    def track_viewport_pan(relayoutData, slider_range):
+        """
+        Track viewport changes from chart pan/zoom.
+        """
+        if not relayoutData:
+            return slider_range or [1, 52]
+        
+        # Extract x-axis range from relayoutData
+        if 'xaxis.range[0]' in relayoutData and 'xaxis.range[1]' in relayoutData:
+            xMin = relayoutData['xaxis.range[0]']
+            xMax = relayoutData['xaxis.range[1]']
+            return [max(1, round(xMin)), min(52, round(xMax))]
+        elif 'xaxis.range' in relayoutData:
+            rng = relayoutData['xaxis.range']
+            if isinstance(rng, list) and len(rng) == 2:
+                return [max(1, round(rng[0])), min(52, round(rng[1]))]
+        elif relayoutData.get('xaxis.autorange'):
+            # Double-click reset
+            return slider_range or [1, 52]
+        
+        # No relevant change (e.g., just hover events)
+        from dash import no_update
+        return no_update
+    
+    # =========================================================================
     # HOVER -> STORE (for cross-widget linking)
     # =========================================================================
     @callback(
@@ -173,7 +207,7 @@ def register_overview_callbacks():
          Output("quality-mini-sparkline", "figure")],
         [Input("hovered-week-store", "data")],
         [State("quality-mini-dept-store", "data"),
-         State("current-week-range", "data")],
+         State("visible-week-range", "data")],  # Use VISIBLE range, not selected range
         prevent_initial_call=True
     )
     def update_quality_mini_on_hover(hovered_data, dept_store, week_range):

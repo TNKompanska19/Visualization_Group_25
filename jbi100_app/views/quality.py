@@ -34,9 +34,9 @@ OPTIMAL_HYPERPARAMS = {
 }
 
 ROLE_COLORS = {
-    'doctor': '#56C1C1',
-    'nurse': '#B57EDC',
-    'nursing_assistant': '#FFD166'
+    'doctor': '#5DADE2',           # Bright sky blue
+    'nurse': '#AF7AC5',             # Vibrant purple  
+    'nursing_assistant': '#58D68D'  # Fresh green
 }
 
 ANOMALY_WEEKS = [3, 6, 9, 12, 15, 18, 21, 24, 27, 30, 33, 36, 39, 42, 45, 48, 51]
@@ -180,34 +180,59 @@ def predict_from_team(department, active_staff_ids):
 
 
 def fan_positions(count, origin_x, origin_y, angle, base_distance=50, spread_angle=120):
-    """Generate fan/tree positions branching from origin.
+    """Generate compact fan/tree positions branching from origin.
+    
+    Uses arc-length based spacing: nodes are spaced by actual distance along the arc,
+    not by angle. This keeps outer rings compact instead of sparse.
     
     Args:
+        count: Number of positions to generate
+        origin_x, origin_y: Starting point (role node position)
         angle: Center angle in degrees (0=right, 90=down, 180=left, 270=up)
-        spread_angle: Total angular spread in degrees
+        base_distance: Distance to first ring
+        spread_angle: Maximum angular spread in degrees
     """
     if count == 0:
         return []
     
     center_angle = math.radians(angle)
+    half_spread = math.radians(spread_angle / 2)
+    
+    # Target spacing between nodes (in pixels)
+    node_spacing = 28  # Compact but readable
+    ring_spacing = 32  # Distance between rings
     
     positions = []
-    max_per_ring = 8
     ring = 0
     placed = 0
     
     while placed < count:
-        ring_count = min(max_per_ring, count - placed)
-        ring_distance = base_distance + ring * 40
-        half_spread = math.radians(spread_angle / 2)
+        ring_distance = base_distance + ring * ring_spacing
         
+        # Calculate how many nodes fit on this ring's arc
+        # Arc length = radius * angle_span
+        arc_length = ring_distance * (2 * half_spread)
+        max_on_ring = max(1, int(arc_length / node_spacing))
+        
+        # Don't place more than remaining
+        ring_count = min(max_on_ring, count - placed)
+        
+        # Calculate angular spacing for this ring
         if ring_count == 1:
             angles = [center_angle]
         else:
+            # Spread evenly across the allowed arc
+            actual_spread = min(2 * half_spread, (ring_count - 1) * node_spacing / ring_distance)
+            half_actual = actual_spread / 2
             angles = [
-                center_angle - half_spread + (2 * half_spread * i / (ring_count - 1))
+                center_angle - half_actual + (actual_spread * i / (ring_count - 1))
                 for i in range(ring_count)
             ]
+        
+        # Stagger odd rings by half a node spacing (fills gaps)
+        if ring % 2 == 1 and ring_count > 1:
+            stagger = (angles[1] - angles[0]) / 2 if len(angles) > 1 else 0
+            angles = [a + stagger for a in angles]
         
         for ang in angles:
             x = origin_x + ring_distance * math.cos(ang)
@@ -229,31 +254,34 @@ def generate_stylesheet(working_ids):
     base_stylesheet = [
         {'selector': '[node_type = "department"]',
          'style': {
-             'background-color': '#2c3e50', 'label': 'data(label)', 'color': 'white',
+             'background-color': 'data(dept_color)', 'label': 'data(label)', 'color': 'white',
              'font-size': '10px', 'font-weight': 'bold', 'width': '70px', 'height': '26px',
              'shape': 'round-rectangle', 'text-valign': 'center', 'text-halign': 'center',
              'border-width': 2, 'border-color': 'white'
          }},
         {'selector': '[node_type = "role"]',
          'style': {
-             'label': 'data(label)', 'color': 'white', 'font-size': '8px', 'font-weight': 'bold',
+             'label': 'data(label)', 'color': '#2c3e50', 'font-size': '8px', 'font-weight': 'bold',
              'width': '45px', 'height': '45px', 'shape': 'diamond',
              'text-valign': 'center', 'text-halign': 'center',
              'text-wrap': 'wrap', 'text-max-width': '43px',
              'border-width': 2, 'border-color': 'white'
          }},
-        {'selector': '[role_name = "doctor"]', 'style': {'background-color': ROLE_COLORS['doctor']}},
-        {'selector': '[role_name = "nurse"]', 'style': {'background-color': ROLE_COLORS['nurse']}},
+        # Role colors: vibrant, distinct from department colors
+        {'selector': '[role_name = "doctor"]', 'style': {'background-color': '#5DADE2'}},
+        {'selector': '[role_name = "nurse"]', 'style': {'background-color': '#AF7AC5'}},
         {'selector': '[role_name = "nursing_assistant"]', 
-         'style': {'background-color': ROLE_COLORS['nursing_assistant'], 'color': '#2c3e50'}},
-        # Default staff style (non-working)
+         'style': {'background-color': '#58D68D'}},
+        # Default staff style - size = magnitude, border color = direction
         {'selector': '[node_type = "staff"]',
          'style': {
              'background-color': 'data(color)', 'label': 'data(label)', 'color': '#2c3e50',
-             'font-size': '6px', 'font-weight': '500',
+             'font-size': '7px', 'font-weight': '500',
              'width': 'data(size)', 'height': 'data(size)', 'shape': 'ellipse',
-             'opacity': 0.3, 'border-width': 1,
-             'border-color': '#999', 'text-valign': 'center', 'text-halign': 'center'
+             'opacity': 0.3,
+             'border-width': 'data(border_width)',
+             'border-color': 'data(border_color)',
+             'text-valign': 'center', 'text-halign': 'center'
          }},
         # Default edge style (hidden for staff edges)
         {'selector': 'edge[source ^= "role_"]',
@@ -266,33 +294,25 @@ def generate_stylesheet(working_ids):
     
     # Add styles for each working staff member
     for staff_id in working_ids:
-        # Highlight working staff
         base_stylesheet.append({
             'selector': f'[id = "staff_{staff_id}"]',
-            'style': {
-                'opacity': 1.0,
-                'border-width': 3,
-                'border-color': '#2c3e50'
-            }
+            'style': {'opacity': 1.0}
         })
-        # Show edge for working staff
         base_stylesheet.append({
             'selector': f'edge[target = "staff_{staff_id}"]',
-            'style': {
-                'opacity': 0.4
-            }
+            'style': {'opacity': 0.4}
         })
     
     return base_stylesheet
 
 
 def create_network_for_week(staff_impacts, department, week, metric='morale', custom_working=None, include_all_edges=False):
-    """Create network with STABLE positions (nodes stay in same place across weeks).
+    """Create network with STABLE positions and COMPOUND NODES (children move with parents).
     
-    Key design principle: Positions are computed ONCE per department based on 
-    staff_id (stable sort), then cached. This ensures:
-    - User can track individual staff across weeks by position
-    - Only brightness/size changes, not location
+    Key design principles:
+    - Positions computed ONCE per department based on staff_id (stable sort), then cached
+    - Compound nodes: staff have role as parent, roles have department as parent
+    - This ensures dragging a parent moves all its children (Cytoscape compound nodes)
     - Supports Object Constancy (Munzner) - maintain spatial mapping
     
     Args:
@@ -320,26 +340,28 @@ def create_network_for_week(staff_impacts, department, week, metric='morale', cu
     CENTER_Y = 40
     
     dept_id = f"dept_{department}"
+    dept_color = CONFIG_DEPT_COLORS.get(department, '#2c3e50')
+    
+    # Department node (top-level parent)
     elements.append({
         'data': {
             'id': dept_id,
             'label': department.replace('_', ' ').title(),
-            'node_type': 'department'
+            'node_type': 'department',
+            'dept_color': dept_color
         },
         'position': {'x': CENTER_X, 'y': CENTER_Y}
     })
     
     ROLE_CONFIG = {
-        'doctor': {'x': CENTER_X - 90, 'y': CENTER_Y + 0, 'angle': 200, 'spread': 120},
-        'nurse': {'x': CENTER_X, 'y': CENTER_Y + 50, 'angle': 90, 'spread': 120},
+        'doctor': {'x': CENTER_X - 90, 'y': CENTER_Y + 0, 'angle': 150, 'spread': 160},
+        'nurse': {'x': CENTER_X, 'y': CENTER_Y + 50, 'angle': 90, 'spread': 160},
         'nursing_assistant': {'x': CENTER_X + 90, 'y': CENTER_Y + 0, 'angle': 30, 'spread': 160}
     }
     
     # Check if we need to compute and cache positions for this department
     cache_key = department
     if cache_key not in _position_cache:
-        # First time for this department - compute STABLE positions
-        # Sort by staff_id (alphabetically) for consistent ordering across all weeks
         _position_cache[cache_key] = {}
         
         for role, config in ROLE_CONFIG.items():
@@ -347,7 +369,6 @@ def create_network_for_week(staff_impacts, department, week, metric='morale', cu
             if role_staff.empty:
                 continue
             
-            # STABLE SORT: by staff_id (not by working status or impact)
             role_staff = role_staff.sort_values('staff_id')
             
             role_x, role_y = config['x'], config['y']
@@ -359,7 +380,7 @@ def create_network_for_week(staff_impacts, department, week, metric='morale', cu
                     staff_id = row['staff_id']
                     _position_cache[cache_key][staff_id] = positions[idx]
     
-    # Now build elements using cached positions
+    # Build elements using cached positions
     for role, config in ROLE_CONFIG.items():
         role_staff = staff_impacts[staff_impacts['role'] == role].copy()
         if role_staff.empty:
@@ -369,6 +390,7 @@ def create_network_for_week(staff_impacts, department, week, metric='morale', cu
         role_id = f"role_{role}"
         role_label = 'Nursing\nAssistants' if role == 'nursing_assistant' else role.title() + 's'
         
+        # Role node - NO parent (free-floating, but edges connect to dept)
         elements.append({
             'data': {
                 'id': role_id,
@@ -378,37 +400,56 @@ def create_network_for_week(staff_impacts, department, week, metric='morale', cu
             },
             'position': {'x': role_x, 'y': role_y}
         })
+        
+        # Edge from department to role
         elements.append({'data': {'source': dept_id, 'target': role_id}})
         
         for _, row in role_staff.iterrows():
             staff_id_val = row['staff_id']
             
-            # Get cached position (stable across weeks)
             if staff_id_val in _position_cache[cache_key]:
                 pos_x, pos_y = _position_cache[cache_key][staff_id_val]
             else:
-                # Fallback (shouldn't happen if cache is built correctly)
                 pos_x, pos_y = role_x, role_y + 50
             
-            # Compute size based on current metric's impact
             abs_impact = abs(row[impact_col])
-            normalized_impact = abs_impact / max_impact
-            size = 16 + normalized_impact * 24
+            normalized_impact = abs_impact / max_impact if max_impact > 0 else 0
             
-            # Determine working status
+            # SIZE ENCODING with Stevens' Power Law correction (M2_03)
+            # Area exponent N = 0.7 → users underestimate
+            # Correction: Area = W^(1/N) = W^(1/0.7) = W^1.43
+            # This way perceived sensation S = W (no bias)
+            min_size = 14
+            max_size = 40
+            corrected_impact = pow(normalized_impact, 1.0 / 0.7) if normalized_impact > 0 else 0
+            size = min_size + corrected_impact * (max_size - min_size)
+            
+            # BORDER ENCODING: color = direction (diverging scale)
+            # Green = positive impact, Red = negative impact
+            # No border if impact is ~0 (threshold for visual noise reduction)
+            impact_value = row[impact_col]
+            impact_threshold = max_impact * 0.01  # 1% of max = effectively zero
+            
+            if abs(impact_value) < impact_threshold:
+                # No meaningful impact - no border
+                border_color_impact = 'transparent'
+                border_width_impact = 0
+            elif impact_value >= 0:
+                border_color_impact = '#27ae60'  # Green - positive
+                border_width_impact = 3
+            else:
+                border_color_impact = '#e74c3c'  # Red - negative
+                border_width_impact = 3
+            
             if custom_working is not None:
                 is_working = staff_id_val in custom_working
             else:
                 is_working = row['working_this_week']
             
-            # Visual properties (stylesheet will override based on working status)
-            opacity = 1.0 if is_working else 0.3
-            border_width = 3 if is_working else 1
-            border_color = '#2c3e50' if is_working else '#999'
-            
             staff_id = f"staff_{staff_id_val}"
             last_name = row['staff_name'].split()[-1][:6]
             
+            # Staff node with border encoding for impact
             elements.append({
                 'data': {
                     'id': staff_id,
@@ -418,16 +459,15 @@ def create_network_for_week(staff_impacts, department, week, metric='morale', cu
                     'node_type': 'staff',
                     'size': float(size),
                     'color': ROLE_COLORS[role],
-                    'opacity': opacity,
-                    'border_width': border_width,
-                    'border_color': border_color,
+                    'border_color': border_color_impact,
+                    'border_width': float(border_width_impact),
                     'is_working': is_working,
                     'impact': float(row[impact_col])
                 },
                 'position': {'x': pos_x, 'y': pos_y}
             })
             
-            # Add edge: always if include_all_edges, otherwise only if working
+            # Edge from role to staff
             if include_all_edges or is_working:
                 elements.append({'data': {'source': role_id, 'target': staff_id}})
     
@@ -436,12 +476,16 @@ def create_network_for_week(staff_impacts, department, week, metric='morale', cu
 
 def create_comparison_bars(department, week, morale_val, sat_val, is_predicted=False, 
                            avg_morale=None, avg_satisfaction=None):
-    """Create compact comparison bar charts with predicted/actual indicator."""
+    """Create compact comparison bar charts with predicted/actual indicator.
     
+    Uses semantic red/green for the week bar to show good/bad performance at a glance.
+    """
     morale_diff = morale_val - avg_morale if avg_morale else 0
     sat_diff = sat_val - avg_satisfaction if avg_satisfaction else 0
     
     label_suffix = "*" if is_predicted else ""
+    
+    # Semantic colors: green = above avg, red = below avg
     week_color_morale = '#27ae60' if morale_diff >= 0 else '#e74c3c'
     week_color_sat = '#27ae60' if sat_diff >= 0 else '#e74c3c'
     
@@ -463,10 +507,9 @@ def create_comparison_bars(department, week, morale_val, sat_val, is_predicted=F
         width=bar_width,
         showlegend=False
     ))
-    diff_color = '#27ae60' if morale_diff >= 0 else '#e74c3c'
     diff_text = f'+{morale_diff:.0f}' if morale_diff >= 0 else f'{morale_diff:.0f}'
     morale_fig.add_annotation(x=x_positions[1], y=morale_val + 8, text=f"<b>{diff_text}</b>",
-                              showarrow=False, font=dict(size=10, color=diff_color))
+                              showarrow=False, font=dict(size=10, color=week_color_morale))
     morale_fig.update_layout(
         title=dict(text='Morale', font=dict(size=10, color='#2c3e50'), x=0.5, y=0.97),
         yaxis=dict(
@@ -504,10 +547,9 @@ def create_comparison_bars(department, week, morale_val, sat_val, is_predicted=F
         width=bar_width,
         showlegend=False
     ))
-    diff_color = '#27ae60' if sat_diff >= 0 else '#e74c3c'
     diff_text = f'+{sat_diff:.0f}' if sat_diff >= 0 else f'{sat_diff:.0f}'
     sat_fig.add_annotation(x=x_positions[1], y=sat_val + 8, text=f"<b>{diff_text}</b>",
-                           showarrow=False, font=dict(size=10, color=diff_color))
+                           showarrow=False, font=dict(size=10, color=week_color_sat))
     sat_fig.update_layout(
         title=dict(text='Satisfaction', font=dict(size=10, color='#2c3e50'), x=0.5, y=0.97),
         yaxis=dict(
@@ -663,12 +705,15 @@ def create_week_context_chart(services_df, department, selected_week, metric='st
     Create a compact bar chart showing metric values across all weeks.
     Highlights selected week and dims anomaly weeks.
     
+    Uses department color for visual consistency across the tool.
+    
     Justification (Munzner):
     - Bar chart uses position (most accurate channel) for quantitative comparison
     - Color hue distinguishes selected week (categorical: selected vs not)
     - Aligned with slider below for direct mapping (position → week)
     """
     dept_data = services_df[services_df['service'] == department].copy()
+    dept_color = CONFIG_DEPT_COLORS.get(department, '#3498db')  # Department color
     
     if dept_data.empty:
         fig = go.Figure()
@@ -695,11 +740,11 @@ def create_week_context_chart(services_df, department, selected_week, metric='st
                 val = week_row[metric].values[0]
                 values.append(val)
                 if w == selected_week:
-                    colors.append('#2c3e50')  # Dark - selected
+                    colors.append('#2c3e50')  # Dark - selected week stands out
                 elif w in ANOMALY_WEEKS:
-                    colors.append('#95a5a6')  # Gray - anomaly week (but real data)
+                    colors.append('#d5d8dc')  # Light gray - anomaly weeks dimmed
                 else:
-                    colors.append('#3498db')  # Blue - normal
+                    colors.append(dept_color)  # Department color for normal weeks
             else:
                 # Missing data
                 values.append(0)
@@ -1221,20 +1266,20 @@ def create_quality_widget(services_df, staff_schedule_df, selected_depts, week_r
                     # Legend + Impact toggle (Gestalt proximity: controls near what they affect)
                     html.Div(style={'flexShrink': '0', 'marginTop': '4px', 'fontSize': '8px', 'textAlign': 'center',
                                     'display': 'flex', 'justifyContent': 'center', 'alignItems': 'center', 'gap': '8px', 'flexWrap': 'wrap'}, children=[
-                        # Role legend
+                        # Role legend (vibrant colors)
                         html.Div(style={'display': 'flex', 'alignItems': 'center', 'gap': '6px'}, children=[
-                            html.Span("●", style={'color': ROLE_COLORS['doctor']}),
+                            html.Span("●", style={'color': '#5DADE2'}),  # Doctor - sky blue
                             html.Span("Doc", style={'marginRight': '4px'}),
-                            html.Span("●", style={'color': ROLE_COLORS['nurse']}),
+                            html.Span("●", style={'color': '#AF7AC5'}),  # Nurse - purple
                             html.Span("Nurse", style={'marginRight': '4px'}),
-                            html.Span("●", style={'color': ROLE_COLORS['nursing_assistant']}),
+                            html.Span("●", style={'color': '#58D68D'}),  # Nursing Assistant - green
                             html.Span("Asst")
                         ]),
                         # Separator
                         html.Span("|", style={'color': '#ccc'}),
-                        # Size encoding explanation + toggle
+                        # Impact metric toggle (Morale vs Satisfaction)
                         html.Div(style={'display': 'flex', 'alignItems': 'center', 'gap': '4px'}, children=[
-                            html.Span("Size=", style={'color': '#7f8c8d'}),
+                            html.Span("Impact:", style={'color': '#7f8c8d'}),
                             html.Button(
                                 "Morale",
                                 id='impact-morale-btn',
@@ -1254,8 +1299,17 @@ def create_quality_widget(services_df, staff_schedule_df, selected_depts, week_r
                                     'backgroundColor': '#ecf0f1', 'color': '#7f8c8d',
                                     'border': 'none', 'borderRadius': '0 3px 3px 0', 'cursor': 'pointer'
                                 }
-                            ),
-                            html.Span("impact", style={'color': '#7f8c8d', 'marginLeft': '2px'})
+                            )
+                        ]),
+                        # Separator
+                        html.Span("|", style={'color': '#ccc'}),
+                        # Visual encoding legend
+                        html.Div(style={'display': 'flex', 'alignItems': 'center', 'gap': '4px'}, children=[
+                            html.Span("●", style={'color': '#27ae60', 'fontSize': '10px'}),
+                            html.Span("+", style={'marginRight': '2px'}),
+                            html.Span("●", style={'color': '#e74c3c', 'fontSize': '10px'}),
+                            html.Span("−", style={'marginRight': '4px'}),
+                            html.Span("| size = strength", style={'color': '#7f8c8d'})
                         ]),
                         # Separator
                         html.Span("|", style={'color': '#ccc'}),
@@ -1324,7 +1378,8 @@ def create_quality_widget(services_df, staff_schedule_df, selected_depts, week_r
         dcc.Store(id='current-department-store', data=department),
         dcc.Store(id='working-ids-store', data=initial_working),
         dcc.Store(id='role-colors-store', data=ROLE_COLORS),
-        dcc.Store(id='saved-configs-store', data=[])  # List of saved configurations
+        dcc.Store(id='saved-configs-store', data=[]),  # List of saved configurations
+        dcc.Store(id='impact-metric-store', data='morale')  # For callback compatibility
     ])
     
     return html.Div(

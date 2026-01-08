@@ -99,6 +99,15 @@ def register_sidebar_callbacks():
         return week_range
     
     @callback(
+        Output("visible-week-range", "data", allow_duplicate=True),
+        Input("week-slider", "value"),
+        prevent_initial_call=True
+    )
+    def reset_visible_range_on_slider(week_range):
+        """Reset visible range when slider changes (before any panning)."""
+        return week_range
+    
+    @callback(
         [Output("week-start-input", "value"), Output("week-end-input", "value")],
         Input("week-slider", "value")
     )

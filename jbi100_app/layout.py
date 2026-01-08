@@ -45,6 +45,7 @@ def create_layout():
             # =========================================================
             dcc.Store(id="week-data-store", data=week_data_store),
             dcc.Store(id="current-week-range", data=[1, 52]),
+            dcc.Store(id="visible-week-range", data=[1, 52]),  # Tracks actual viewport after pan/zoom
             dcc.Store(id="expanded-widget", data="overview"),
             dcc.Store(id="hovered-week-store", data=None),  # For linking hover across widgets
             dcc.Store(id="primary-dept-store", data="emergency"),  # Primary dept for Quality widget

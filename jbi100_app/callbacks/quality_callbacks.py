@@ -49,12 +49,12 @@ def register_quality_callbacks():
         
         # Default styles
         active_style = {
-            'padding': '3px 8px', 'fontSize': '9px', 'fontWeight': '600',
+            'padding': '2px 6px', 'fontSize': '8px', 'fontWeight': '600',
             'backgroundColor': '#3498db', 'color': 'white',
             'border': 'none', 'cursor': 'pointer'
         }
         inactive_style = {
-            'padding': '3px 8px', 'fontSize': '9px', 'fontWeight': '500',
+            'padding': '2px 6px', 'fontSize': '8px', 'fontWeight': '500',
             'backgroundColor': '#ecf0f1', 'color': '#7f8c8d',
             'border': 'none', 'cursor': 'pointer'
         }
@@ -65,16 +65,15 @@ def register_quality_callbacks():
         elif triggered == 'impact-morale-btn':
             new_metric = 'morale'
         else:
-            # Initial load - use current or default
             new_metric = current_metric or 'morale'
         
         # Set button styles based on active metric
         if new_metric == 'morale':
-            morale_style = {**active_style, 'borderRadius': '4px 0 0 4px'}
-            sat_style = {**inactive_style, 'borderRadius': '0 4px 4px 0'}
+            morale_style = {**active_style, 'borderRadius': '3px 0 0 3px'}
+            sat_style = {**inactive_style, 'borderRadius': '0 3px 3px 0'}
         else:
-            morale_style = {**inactive_style, 'borderRadius': '4px 0 0 4px'}
-            sat_style = {**active_style, 'borderRadius': '0 4px 4px 0'}
+            morale_style = {**inactive_style, 'borderRadius': '3px 0 0 3px'}
+            sat_style = {**active_style, 'borderRadius': '0 3px 3px 0'}
         
         return new_metric, morale_style, sat_style
     
@@ -86,33 +85,33 @@ def register_quality_callbacks():
                 workingIds = [];
             }
             
-            // Base stylesheet
             var stylesheet = [
                 {selector: '[node_type = "department"]',
                  style: {
-                     'background-color': '#2c3e50', 'label': 'data(label)', 'color': 'white',
+                     'background-color': 'data(dept_color)', 'label': 'data(label)', 'color': 'white',
                      'font-size': '10px', 'font-weight': 'bold', 'width': '70px', 'height': '26px',
                      'shape': 'round-rectangle', 'text-valign': 'center', 'text-halign': 'center',
                      'border-width': 2, 'border-color': 'white'
                  }},
                 {selector: '[node_type = "role"]',
                  style: {
-                     'label': 'data(label)', 'color': 'white', 'font-size': '8px', 'font-weight': 'bold',
+                     'label': 'data(label)', 'color': '#2c3e50', 'font-size': '8px', 'font-weight': 'bold',
                      'width': '45px', 'height': '45px', 'shape': 'diamond',
                      'text-valign': 'center', 'text-halign': 'center',
                      'text-wrap': 'wrap', 'text-max-width': '43px',
                      'border-width': 2, 'border-color': 'white'
                  }},
-                {selector: '[role_name = "doctor"]', style: {'background-color': '#56C1C1'}},
-                {selector: '[role_name = "nurse"]', style: {'background-color': '#B57EDC'}},
-                {selector: '[role_name = "nursing_assistant"]', 
-                 style: {'background-color': '#FFD166', 'color': '#2c3e50'}},
+                {selector: '[role_name = "doctor"]', style: {'background-color': '#5DADE2'}},
+                {selector: '[role_name = "nurse"]', style: {'background-color': '#AF7AC5'}},
+                {selector: '[role_name = "nursing_assistant"]', style: {'background-color': '#58D68D'}},
                 {selector: '[node_type = "staff"]',
                  style: {
                      'background-color': 'data(color)', 'label': 'data(label)', 'color': '#2c3e50',
-                     'font-size': '8px', 'font-weight': '500',
+                     'font-size': '7px', 'font-weight': '500',
                      'width': 'data(size)', 'height': 'data(size)', 'shape': 'ellipse',
-                     'opacity': 0.3, 'border-width': 0,
+                     'opacity': 0.3,
+                     'border-width': 'data(border_width)',
+                     'border-color': 'data(border_color)',
                      'text-valign': 'center', 'text-halign': 'center'
                  }},
                 {selector: 'edge[source ^= "role_"]',
@@ -122,7 +121,6 @@ def register_quality_callbacks():
                 {selector: ':active', style: {'overlay-opacity': 0.2, 'overlay-color': '#3498db'}}
             ];
             
-            // Add styles for working staff
             for (var i = 0; i < workingIds.length; i++) {
                 var staffId = workingIds[i];
                 stylesheet.push({

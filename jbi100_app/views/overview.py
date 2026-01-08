@@ -17,7 +17,7 @@ from dash import html, dcc
 
 from jbi100_app.config import (
     DEPT_COLORS, DEPT_LABELS, DEPT_LABELS_SHORT,
-    EVENT_COLORS, EVENT_ICONS, WIDGET_INFO, ZOOM_THRESHOLDS, CHART_CONFIG,
+    EVENT_COLORS, get_event_icon_svg, WIDGET_INFO, ZOOM_THRESHOLDS, CHART_CONFIG,
     SEMANTIC_COLORS
 )
 
@@ -225,6 +225,7 @@ def create_overview_charts(df, selected_depts, week_range, show_events=True, hid
             events_by_week[week] = events_by_dept
         
         # Add event markers - stack vertically, centered on each week's line
+        # Using xref="x" so icons scroll with the chart when panning
         for week, events_by_dept in week_event_groups.items():
             # Add subtle vertical line through both plots
             fig.add_vline(
@@ -239,31 +240,36 @@ def create_overview_charts(df, selected_depts, week_range, show_events=True, hid
                 for evt in dept_events:
                     all_events.append((dept, evt))
             
-            # Stack events vertically, centered
+            # Stack events vertically, centered in the gap between plots
             num_events = len(all_events)
             y_center = 0.50
-            y_spacing = 0.05
+            y_spacing = 0.035
             y_start = y_center + ((num_events - 1) * y_spacing / 2)
+            
+            # Calculate icon size - sizey in paper coords, sizex in weeks
+            # Adjust sizex based on week_span to keep icons ~square
+            week_span = week_max - week_min + 1
+            icon_sizey = 0.04
+            icon_sizex = icon_sizey * 0.35 * week_span  # Reduced for squarer appearance
             
             for idx, (dept, evt) in enumerate(all_events):
                 y_pos = y_start - (idx * y_spacing)
                 
-                fig.add_annotation(
-                    x=week,
-                    y=y_pos,
-                    xref="x",
-                    yref="paper",
-                    text=EVENT_ICONS.get(evt, "⚡"),
-                    showarrow=False,
-                    font=dict(size=11),  # Keep your adjusted size
-                    bgcolor="white",
-                    bordercolor=DEPT_COLORS[dept],
-                    borderwidth=1,  # Keep your adjusted thickness
-                    borderpad=0,
-                    opacity=1.0,
-                    align="center",
-                    valign="middle",
-                )
+                # Generate icon SVG with department color
+                icon_src = get_event_icon_svg(evt, DEPT_COLORS[dept])
+                if icon_src:
+                    fig.add_layout_image(
+                        source=icon_src,
+                        x=week,
+                        y=y_pos,
+                        xref="x",
+                        yref="paper",
+                        sizex=icon_sizex,
+                        sizey=icon_sizey,
+                        xanchor="center",
+                        yanchor="middle",
+                        layer="above"
+                    )
     
     fig.update_layout(
         height=420,  # Increased to accommodate larger event marker gap
@@ -423,7 +429,8 @@ def create_event_strip(events_by_week, week_range):
         position_pct = ((week - week_min) / total_weeks) * 100
         
         # Combine multiple events into one string
-        emoji_str = " ".join([EVENT_ICONS.get(evt, "⚡") for evt in events])
+        event_labels = {"flu": "🦠", "donation": "💧", "strike": "⚡"}
+        emoji_str = " ".join([event_labels.get(evt, "⚡") for evt in events])
         
         event_elements.append(
             html.Div(
@@ -806,17 +813,20 @@ def build_tooltip_content(week, week_data, selected_depts, df, week_range):
             dept = evt_info["dept"]
             dept_color = DEPT_COLORS.get(dept, "#999")
             
+            # Generate SVG icon for tooltip (same as chart)
+            icon_src = get_event_icon_svg(evt, dept_color)
+            
             top_section_children.append(
                 html.Div(
                     style={
-                        "display": "flex", "alignItems": "center", "gap": "3px",
+                        "display": "flex", "alignItems": "center", "gap": "4px",
                         "marginBottom": "3px", "padding": "2px 4px",
                         "backgroundColor": _hex_to_rgba(dept_color, 0.15),
                         "borderRadius": "3px", 
                         "borderLeft": f"3px solid {dept_color}"
                     },
                     children=[
-                        html.Span(EVENT_ICONS.get(evt, "⚡"), style={"fontSize": "10px"}),
+                        html.Img(src=icon_src, style={"width": "12px", "height": "12px"}),
                         html.Span(evt.capitalize(), style={
                             "fontSize": "9px", "color": "#555", "fontWeight": "500"
                         })
