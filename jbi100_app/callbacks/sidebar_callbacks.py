@@ -13,7 +13,6 @@ Callbacks for sidebar interactions:
 from dash import callback, Output, Input, State, ctx, ALL, MATCH
 
 from jbi100_app.views.menu import get_sidebar_collapsed_style, get_sidebar_expanded_style
-from jbi100_app.views.overview import get_zoom_level
 from jbi100_app.config import DEPT_LABELS, DEPT_COLORS
 
 
@@ -127,34 +126,6 @@ def register_sidebar_callbacks():
         if start > end:
             start, end = end, start
         return [start, end]
-    
-    # =========================================================================
-    # ZOOM LEVEL INDICATOR
-    # =========================================================================
-    @callback(
-        [Output("zoom-level-indicator", "children"), Output("zoom-level-indicator", "style")],
-        Input("week-slider", "value")
-    )
-    def update_zoom_indicator(week_range):
-        """Update zoom level indicator based on current range."""
-        zoom_level = get_zoom_level(week_range)
-        base_style = {
-            "fontSize": "10px",
-            "textAlign": "center",
-            "marginTop": "5px",
-            "padding": "4px 8px",
-            "borderRadius": "4px",
-            "fontWeight": "500"
-        }
-        
-        indicators = {
-            "detail": ("🔍 Detail View (labels + events + thresholds)", {"color": "#27ae60", "backgroundColor": "#e8f8f0"}),
-            "quarter": ("📊 Quarter View (events visible)", {"color": "#3498db", "backgroundColor": "#ebf5fb"}),
-            "overview": ("🌐 Overview (trends only)", {"color": "#7f8c8d", "backgroundColor": "#ecf0f1"})
-        }
-        
-        text, color_style = indicators[zoom_level]
-        return text, {**base_style, **color_style}
     
     # =========================================================================
     # CUSTOM DEPARTMENT SELECTOR

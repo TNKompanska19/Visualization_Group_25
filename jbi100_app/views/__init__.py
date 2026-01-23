@@ -16,11 +16,6 @@ from jbi100_app.views.quantity import (
     create_quantity_mini
 )
 
-from jbi100_app.views.quality import (
-    create_quality_widget,
-    compute_staff_impacts_all_weeks,
-    create_network_for_week
-)
 
 from jbi100_app.views.menu import (
     create_sidebar,
@@ -36,9 +31,6 @@ __all__ = [
     "build_tooltip_content",
     "create_quantity_expanded",
     "create_quantity_mini",
-    "create_quality_widget",
-    "compute_staff_impacts_all_weeks",
-    "create_network_for_week",
     "create_sidebar",
     "get_sidebar_collapsed_style",
     "get_sidebar_expanded_style"

@@ -181,21 +181,6 @@ def create_sidebar():
                         allowCross=False
                     ),
                     
-                    # Zoom level indicator (Semantic Zoom feedback)
-                    html.Div(
-                        id="zoom-level-indicator",
-                        children="🌐 Overview",
-                        style={
-                            "color": "#95a5a6",
-                            "fontSize": "10px",
-                            "textAlign": "center",
-                            "marginTop": "5px",
-                            "padding": "4px",
-                            "backgroundColor": "#ecf0f1",
-                            "borderRadius": "4px"
-                        }
-                    ),
-                    
                     html.Hr(style={"borderColor": "#e0e0e0", "margin": "15px 0"}),
                     
                     # Quick select buttons
@@ -240,23 +225,7 @@ def create_sidebar():
                     
                     html.Hr(style={"borderColor": "#e0e0e0", "margin": "15px 0"}),
                     
-                    # Display options
-                    html.Label(
-                        "Display Options",
-                        style={"color": "#2c3e50", "fontWeight": "600", "marginBottom": "10px", "display": "block", "fontSize": "13px"}
-                    ),
-                    
-                    # Show event markers toggle
-                    dcc.Checklist(
-                        id="show-events-toggle",
-                        options=[{"label": " Show event markers", "value": "show"}],
-                        value=["show"],  # Default: checked (events visible)
-                        style={"color": "#34495e", "fontSize": "12px"},
-                        inputStyle={"marginRight": "8px"},
-                        labelStyle={"display": "block", "marginBottom": "8px", "cursor": "pointer"}
-                    ),
-                    
-                    # Hide anomaly weeks toggle
+                    # Data quality toggle
                     dcc.Checklist(
                         id="hide-anomalies-toggle",
                         options=[{"label": " Hide anomaly weeks", "value": "hide"}],
