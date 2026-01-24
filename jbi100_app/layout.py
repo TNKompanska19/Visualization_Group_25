@@ -63,7 +63,8 @@ def create_layout():
                     "flexDirection": "column",
                     "padding": "8px",
                     "gap": "8px",
-                    "overflow": "hidden",
+                    # Allow the dashboard to scroll vertically (prevents bottom chart clipping)
+                    "overflow": "auto",
                     "minWidth": "0"
                 },
                 children=[

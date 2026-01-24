@@ -159,12 +159,21 @@ def _build_time_series(df, depts, selection_store):
             "H5"
         )
     
+    # T5 event encoding (diamonds + color); keep department color for normal weeks
+    event_colors = {
+        "flu": "#D55E00",
+        "strike": "#CC79A7",
+        "donation": "#009E73",
+    }
+
     dim_non_selected = 0.15 if highlight and not is_filtered_by_splom else 1.0
     for dept in (depts or []):
         dept_df = df[df["service"] == dept].sort_values("week")
         if dept_df.empty:
             continue
-        customdata = list(zip(dept_df["week"], dept_df["service"]))
+        # Keep (week, service) first so brushing extraction keeps working
+        event_series = dept_df["event"] if "event" in dept_df.columns else ["none"] * len(dept_df)
+        customdata = list(zip(dept_df["week"], dept_df["service"], dept_df.get("available_beds"), event_series))
         
         if is_filtered_by_splom:
             mode = "markers"
@@ -173,16 +182,41 @@ def _build_time_series(df, depts, selection_store):
             mode = "lines+markers"
             line = dict(color=DEPT_COLORS.get(dept, "#999"), width=2)
         
+        # Diamonds for event weeks, circles otherwise (T5)
+        marker_symbols = []
+        marker_colors = []
+        marker_sizes = []
+        for ev in event_series:
+            if ev in event_colors:
+                marker_symbols.append("diamond")
+                marker_colors.append(event_colors[ev])
+                marker_sizes.append(7 if not is_filtered_by_splom else 9)
+            else:
+                marker_symbols.append("circle")
+                marker_colors.append(DEPT_COLORS.get(dept, "#999"))
+                marker_sizes.append(5 if not is_filtered_by_splom else 8)
+
         fig.add_trace(go.Scatter(
             x=dept_df["week"],
             y=dept_df["pressure_index"],
             mode=mode,
             name=DEPT_LABELS.get(dept, dept),
             line=line,
-            marker=dict(size=8 if is_filtered_by_splom else 5, color=DEPT_COLORS.get(dept, "#999")),
+            marker=dict(
+                size=marker_sizes,
+                color=marker_colors,
+                symbol=marker_symbols,
+                line=dict(width=1, color="#fff") if not is_filtered_by_splom else None,
+            ),
             opacity=dim_non_selected,
             customdata=customdata,
-            hovertemplate="<b>%{customdata[1]}</b><br>Week %{x}<br>Pressure %{y:.2f}<extra></extra>"
+            hovertemplate=(
+                "<b>%{customdata[1]}</b><br>"
+                "Week %{x}<br>"
+                "Pressure: %{y:.2f}<br>"
+                "Beds: %{customdata[2]}<br>"
+                "Event: %{customdata[3]}<extra></extra>"
+            )
         ))
 
         if highlight and not is_filtered_by_splom:
@@ -195,6 +229,7 @@ def _build_time_series(df, depts, selection_store):
                 "H4"
             )
             if not selected.empty:
+                selected_event_series = selected["event"] if "event" in selected.columns else ["none"] * len(selected)
                 fig.add_trace(go.Scatter(
                     x=selected["week"],
                     y=selected["pressure_index"],
@@ -202,8 +237,14 @@ def _build_time_series(df, depts, selection_store):
                     name=f"{DEPT_LABELS.get(dept, dept)} selected",
                     marker=dict(size=12, color=DEPT_COLORS.get(dept, "#999"), line=dict(color="#fff", width=1.5)),
                     showlegend=False,
-                    customdata=list(zip(selected["week"], selected["service"])),
-                    hovertemplate="<b>%{customdata[1]}</b><br>Week %{x}<br>Pressure %{y:.2f}<extra></extra>"
+                    customdata=list(zip(selected["week"], selected["service"], selected.get("available_beds"), selected_event_series)),
+                    hovertemplate=(
+                        "<b>%{customdata[1]}</b><br>"
+                        "Week %{x}<br>"
+                        "Pressure: %{y:.2f}<br>"
+                        "Beds: %{customdata[2]}<br>"
+                        "Event: %{customdata[3]}<extra></extra>"
+                    )
                 ))
 
     ymax = max(1.5, float(df["pressure_index"].max() * 1.1)) if not df.empty else 1.5
@@ -216,7 +257,7 @@ def _build_time_series(df, depts, selection_store):
     else:
         x_min, x_max = df["week"].min(), df["week"].max()
         x_range = [x_min - 0.5, x_max + 0.5]
-        subtitle = "Select points to brush multivariate view"
+        subtitle = "Select points to brush multivariate view. Diamonds = events (T5)"
 
     fig.update_layout(
         title=dict(
@@ -230,6 +271,106 @@ def _build_time_series(df, depts, selection_store):
         showlegend=True,
         legend=dict(orientation="h", yanchor="top", y=-0.2, xanchor="left", x=0),
         dragmode="select"
+    )
+    return fig
+
+
+def _build_department_comparison(df, selection_store):
+    """Bottom chart for T3/T4: net capacity (beds - demand) by department."""
+    if df.empty:
+        empty_fig = go.Figure()
+        empty_fig.add_annotation(
+            text="No data",
+            x=0.5, y=0.5, xref="paper", yref="paper",
+            showarrow=False, font=dict(size=10, color="#999")
+        )
+        empty_fig.update_layout(template="plotly_white")
+        return empty_fig
+
+    selection_points = _selection_set(selection_store)
+    if selection_points and selection_store.get("source") in ["efficiency-timeseries", "multivariate-splom"]:
+        df = df[df.apply(lambda r: (r["week"], r["service"]) in selection_points, axis=1)].copy()
+        if df.empty:
+            empty_fig = go.Figure()
+            empty_fig.add_annotation(
+                text="No data for selected points",
+                x=0.5, y=0.5, xref="paper", yref="paper",
+                showarrow=False, font=dict(size=10, color="#999")
+            )
+            empty_fig.update_layout(template="plotly_white")
+            return empty_fig
+
+    dept_stats = df.groupby("service").agg({
+        "available_beds": "mean",
+        "patients_request": "mean",
+        "patients_admitted": "mean",
+        "patients_refused": "mean",
+        "pressure_index": "mean",
+        "acceptance_rate": "mean",
+    }).reset_index()
+
+    dept_stats["avg_beds"] = dept_stats["available_beds"]
+    dept_stats["avg_demand"] = dept_stats["patients_request"]
+    dept_stats["net_capacity"] = dept_stats["avg_beds"] - dept_stats["avg_demand"]
+    dept_stats["utilization_rate_calc"] = (
+        (dept_stats["patients_admitted"] / dept_stats["available_beds"].replace(0, np.nan)) * 100
+    ).fillna(0)
+
+    dept_stats = dept_stats.sort_values("net_capacity", ascending=False)
+
+    selected_depts = set()
+    if selection_store and selection_store.get("points"):
+        selected_depts = {p.get("service") for p in selection_store["points"] if p.get("service")}
+
+    colors = []
+    for _, row in dept_stats.iterrows():
+        dept = row["service"]
+        net = row["net_capacity"]
+        if selection_points and dept in selected_depts:
+            colors.append(DEPT_COLORS.get(dept, "#999"))
+        else:
+            colors.append("#27ae60" if net >= 0 else "#e74c3c")
+
+    customdata = list(zip(
+        dept_stats["service"],
+        dept_stats["avg_beds"],
+        dept_stats["avg_demand"],
+        dept_stats["utilization_rate_calc"],
+        dept_stats["pressure_index"],
+        dept_stats["acceptance_rate"],
+    ))
+
+    fig = go.Figure()
+    fig.add_trace(go.Bar(
+        x=[DEPT_LABELS.get(d, d) for d in dept_stats["service"]],
+        y=dept_stats["net_capacity"],
+        marker=dict(color=colors, line=dict(width=1.5, color="#fff")),
+        customdata=customdata,
+        hovertemplate=(
+            "<b>%{x}</b><br>"
+            "Avg Beds: %{customdata[1]:.0f}<br>"
+            "Avg Demand: %{customdata[2]:.0f}<br>"
+            "Net (Beds - Demand): %{y:.1f}<br>"
+            "Utilization: %{customdata[3]:.1f}%<br>"
+            "Pressure: %{customdata[4]:.2f}<br>"
+            "Acceptance: %{customdata[5]:.1f}%<extra></extra>"
+        ),
+        showlegend=False,
+    ))
+
+    fig.add_hline(y=0, line_dash="dash", line_color="#7f8c8d", line_width=1)
+
+    fig.update_layout(
+        title=dict(
+            text="<b>Slack vs Overload by Department (T3 & T4)</b>"
+                 "<br><span style='font-size:9px;color:#7f8c8d'>Net capacity = Beds − Demand. Green=Slack (≥0), Red=Overload (&lt;0).</span>",
+            x=0.5, xanchor="center", y=0.95, font=dict(size=13, color="#2c3e50"),
+        ),
+        template="plotly_white",
+        # More space so axes/labels aren't clipped in shorter cards
+        margin=dict(l=90, r=20, t=90, b=80),
+        xaxis=dict(title="Department", tickfont=dict(size=9), automargin=True),
+        yaxis=dict(title="Net capacity (Beds − Demand)", tickfont=dict(size=9), automargin=True),
     )
     return fig
 
@@ -256,22 +397,29 @@ def _build_splom(df, selection_store):
             "H5"
         )
 
+    # Cleaner labels (Splom axes don't support explicit ranges)
     dims = [
-        dict(label="Pressure Index", values=df["pressure_index"]),
-        dict(label="Utilization %", values=df["utilization_rate"]),
-        dict(label="Acceptance %", values=df["acceptance_rate"]),
-        dict(label="Mean LOS", values=df["mean_los"])
+        dict(label="Pressure idx", values=df["pressure_index"]),
+        dict(label="Util (%)", values=df["utilization_rate"]),
+        dict(label="Accept (%)", values=df["acceptance_rate"]),
+        dict(label="LOS (days)", values=df["mean_los"]),
     ]
 
-    base_custom = list(zip(df["week"], df["service"]))
+    # Keep (week, service) first so brushing extraction keeps working
+    base_custom = list(zip(df["week"], df["service"], df.get("available_beds")))
+    # T4: marker size encodes bed capacity
+    bed_sizes = [max(4, min(10, int(beds / 10) + 4)) for beds in df.get("available_beds")]
     fig = go.Figure()
 
     if highlight:
         fig.add_trace(go.Splom(
             dimensions=dims,
-            marker=dict(color="#d0d0d0", size=4, opacity=0.15),
+            marker=dict(color="#d0d0d0", size=3, opacity=0.12),
             text=df["service"],
             customdata=base_custom,
+            hovertemplate="<b>%{text}</b><br>Week %{customdata[0]}<br>Beds: %{customdata[2]}<extra></extra>",
+            showupperhalf=True,
+            diagonal_visible=False,
             showlegend=False
         ))
 
@@ -282,22 +430,26 @@ def _build_splom(df, selection_store):
             "H4"
         )
         if not selected_df.empty:
-            selected_custom = list(zip(selected_df["week"], selected_df["service"]))
+            selected_custom = list(zip(selected_df["week"], selected_df["service"], selected_df.get("available_beds")))
+            selected_bed_sizes = [max(6, min(12, int(beds / 10) + 5)) for beds in selected_df.get("available_beds")]
             fig.add_trace(go.Splom(
                 dimensions=[
-                    dict(label="Pressure Index", values=selected_df["pressure_index"]),
-                    dict(label="Utilization %", values=selected_df["utilization_rate"]),
-                    dict(label="Acceptance %", values=selected_df["acceptance_rate"]),
-                    dict(label="Mean LOS", values=selected_df["mean_los"])
+                    dict(label="Pressure idx", values=selected_df["pressure_index"]),
+                    dict(label="Util (%)", values=selected_df["utilization_rate"]),
+                    dict(label="Accept (%)", values=selected_df["acceptance_rate"]),
+                    dict(label="LOS (days)", values=selected_df["mean_los"]),
                 ],
                 marker=dict(
                     color=[DEPT_COLORS.get(s, "#999") for s in selected_df["service"]],
-                    size=8,
+                    size=selected_bed_sizes,
                     opacity=0.95,
                     line=dict(width=0.5, color="#fff")
                 ),
                 text=selected_df["service"],
                 customdata=selected_custom,
+                hovertemplate="<b>%{text}</b><br>Week %{customdata[0]}<br>Beds: %{customdata[2]}<extra></extra>",
+                showupperhalf=True,
+                diagonal_visible=False,
                 showlegend=False
             ))
     else:
@@ -305,23 +457,29 @@ def _build_splom(df, selection_store):
             dimensions=dims,
             marker=dict(
                 color=[DEPT_COLORS.get(s, "#999") for s in df["service"]],
-                size=5,
+                size=bed_sizes,
                 opacity=0.7
             ),
             text=df["service"],
             customdata=base_custom,
+            hovertemplate="<b>%{text}</b><br>Week %{customdata[0]}<br>Beds: %{customdata[2]}<extra></extra>",
+            showupperhalf=True,
+            diagonal_visible=False,
             showlegend=False
         ))
 
     fig.update_layout(
         title=dict(
-            text="<b>Multivariate Efficiency Relationships</b><br><span style='font-size:9px;color:#7f8c8d'>Brush to filter time series</span>",
+            text="<b>Multivariate Efficiency Relationships</b><br><span style='font-size:9px;color:#7f8c8d'>Brush to filter time series. Marker size = bed capacity (T4)</span>",
             x=0.5, xanchor="center", y=0.96, font=dict(size=13, color="#2c3e50")
         ),
+        font=dict(size=10),
         template="plotly_white",
-        margin=dict(l=30, r=10, t=50, b=30),
+        margin=dict(l=75, r=115, t=70, b=65),
         dragmode="select"
     )
+    fig.update_xaxes(tickfont=dict(size=8), title_font=dict(size=9), automargin=True)
+    fig.update_yaxes(tickfont=dict(size=8), title_font=dict(size=9), automargin=True)
     return fig
 
 
@@ -467,6 +625,7 @@ def register_dashboard_callbacks():
     @callback(
         [Output("efficiency-timeseries", "figure"),
          Output("multivariate-splom", "figure"),
+         Output("department-comparison", "figure"),
          Output("brush-summary", "children")],
         [Input("dept-filter", "value"),
          Input("week-slider", "value"),
@@ -501,7 +660,7 @@ def register_dashboard_callbacks():
                 showarrow=False, font=dict(size=10, color="#999")
             )
             empty_fig.update_layout(template="plotly_white")
-            return empty_fig, empty_fig, "Select departments to begin brushing."
+            return empty_fig, empty_fig, empty_fig, "Select departments to begin brushing."
 
         selection_points = _selection_set(selection_store)
         if selection_points:
@@ -513,5 +672,6 @@ def register_dashboard_callbacks():
 
         time_fig = _build_time_series(df, selected_depts, selection_store or {})
         splom_fig = _build_splom(df, selection_store or {})
+        comp_fig = _build_department_comparison(df, selection_store or {})
 
-        return time_fig, splom_fig, summary
+        return time_fig, splom_fig, comp_fig, summary
