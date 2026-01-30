@@ -114,6 +114,7 @@ def register_quantity_callbacks():
         Highlight = vrect in figure (x0=week-0.5, x1=week+0.5) so it stays aligned.
         """
         week_range = week_range or [1, 52]
+        w_min, w_max = int(week_range[0]), int(week_range[1])
         depts = depts or ["emergency"]
         hide = "hide" in (hide_anom or [])
 
@@ -179,6 +180,7 @@ def register_quantity_callbacks():
             template="plotly_white",
             margin=dict(l=60, r=30, t=88, b=50),
             dragmode="zoom",
+            uirevision="stacked-beds-demand",
             title=dict(
                 text="<b>Beds vs Demand by Week</b><br><span style='font-size:10px;color:#7f8c8d'>Hover or zoom; zoom syncs line chart & PCP</span>",
                 font=dict(size=15, color="#2c3e50"),
@@ -189,15 +191,18 @@ def register_quantity_callbacks():
             xaxis=dict(
                 type="linear",
                 title="Week",
+                range=[w_min - 0.6, w_max + 0.6],
+                autorange=False,
                 gridcolor=GRID_COLOR,
                 tickfont=AXIS_TICK_FONT,
                 title_font=AXIS_LABEL_FONT,
                 fixedrange=False,
-                tickvals=list(range(0, 53, 4)),
+                tickvals=list(range(max(0, (w_min // 4) * 4), min(53, w_max + 5), 4)),
             ),
             yaxis=dict(
                 title="Count",
                 range=[0, y_upper],
+                autorange=False,
                 gridcolor=GRID_COLOR,
                 tickfont=AXIS_TICK_FONT,
                 title_font=AXIS_LABEL_FONT,
