@@ -2,13 +2,11 @@
 Widget Management Callbacks
 JBI100 Visualization - Group 25
 
-Callbacks for widget rendering and swapping:
-- Main widget rendering
-- Mini widget rendering
-- Widget swap on click
+Callbacks for widget rendering and swapping.
 """
 
 from dash import callback, Output, Input, State, ctx, html
+from dash.exceptions import PreventUpdate
 
 from jbi100_app.data import get_services_data, get_patients_data, get_staff_schedule_data
 from jbi100_app.views.overview import create_overview_expanded, create_overview_mini
@@ -34,12 +32,6 @@ def register_widget_callbacks():
         prevent_initial_call=True
     )
     def swap_widget(click1, click2, current):
-        """
-        Swap expanded widget when mini widget is clicked.
-        
-        Widget order: overview, quantity, quality
-        When one is expanded, the other two are in mini slots.
-        """
         widgets = ["overview", "quantity", "quality"]
         others = [w for w in widgets if w != current]
         
@@ -58,39 +50,23 @@ def register_widget_callbacks():
          Output("mini-slot-2", "children")],
         [Input("expanded-widget", "data"),
          Input("dept-filter", "value"),
-         Input("primary-dept-store", "data"),  # Added: Primary dept for quality widget
-         Input("week-slider", "value"),
+         Input("primary-dept-store", "data"),
+         Input("current-week-range", "data"),
          Input("show-events-toggle", "value"),
          Input("hide-anomalies-toggle", "value")]
     )
     def render_widgets(expanded, selected_depts, primary_dept, week_range, show_events_list, hide_anomalies_list):
-        """
-        Render all widgets based on current state.
-        
-        This is the main render callback that updates:
-        - The expanded widget in the main area
-        - Both mini widgets in the bottom row
-        
-        Args:
-            expanded: Which widget is currently expanded ("overview", "quantity", "quality")
-            selected_depts: List of selected department IDs (for overview/quantity)
-            primary_dept: Primary department for quality widget (single dept)
-            week_range: [start_week, end_week] from slider
-        
-        Returns:
-            tuple: (main_widget_content, mini1_content, mini2_content)
-        """
+        """Render all widgets based on current state."""
         selected_depts = selected_depts or ["emergency"]
         primary_dept = primary_dept or (selected_depts[0] if selected_depts else "emergency")
+        week_range = week_range or [1, 52]
         
-        # Convert checkbox lists to booleans
         show_events = "show" in (show_events_list or [])
         hide_anomalies = "hide" in (hide_anomalies_list or [])
         
         widgets = ["overview", "quantity", "quality"]
         others = [w for w in widgets if w != expanded]
         
-        # Create expanded widget
         if expanded == "overview":
             main_content = create_overview_expanded(
                 _services_df, selected_depts, week_range, show_events, hide_anomalies
@@ -99,14 +75,11 @@ def register_widget_callbacks():
             main_content = create_quantity_expanded(
                 _services_df, _patients_df, selected_depts, week_range
             )
-        else:  # quality - uses primary_dept only (single department)
+        else:
             main_content = create_quality_widget(
                 _services_df, _staff_schedule_df, [primary_dept], week_range
             )
         
-        # Create mini widgets
-        # Note: Quality mini shows all selected depts for morale sparkline, 
-        # but network view (expanded) shows only primary dept
         mini_creators = {
             "overview": lambda: create_overview_mini(_services_df, selected_depts, week_range),
             "quantity": lambda: create_quantity_mini(_services_df, selected_depts, week_range),
