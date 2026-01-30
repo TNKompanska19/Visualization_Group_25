@@ -4,8 +4,7 @@ JBI100 Visualization - Group 25
 
 Callbacks for the Overview widget (T1):
 - Hover interactions → update hovered-week-store
-- Tooltip updates
-- Histogram updates (delegated to unified_callbacks for semantic zoom)
+- Tooltip + hover line (bbox-based for direct hover; percentage for cross-widget)
 """
 
 from dash import callback, Output, Input, State, html, ctx, no_update
@@ -23,106 +22,7 @@ def register_overview_callbacks():
     """Register all overview widget callbacks."""
     
     # =========================================================================
-    # HOVER -> STORE (for cross-widget linking)
-    # This is the PRIMARY callback for linking - updates hovered-week-store
-    # =========================================================================
-    @callback(
-        Output("hovered-week-store", "data"),
-        Input("overview-chart", "hoverData"),
-        prevent_initial_call=True
-    )
-    def update_hovered_week_store(hoverData):
-        """
-        Update hovered-week-store when user hovers over Overview chart.
-        This enables Linking & Brushing (M4_04) with other widgets.
-        """
-        if not hoverData or not hoverData.get("points"):
-            return None
-        
-        point = hoverData["points"][0]
-        week = int(round(point.get("x", 0)))
-        
-        # Clamp week to valid range
-        if week < 1 or week > 52:
-            return None
-        
-        # Extract hovered department from customdata
-        hovered_dept = None
-        if "customdata" in point and point["customdata"]:
-            customdata = point["customdata"]
-            if isinstance(customdata, list) and len(customdata) > 0:
-                hovered_dept = customdata[0]
-        
-        return {"week": week, "department": hovered_dept}
-    
-    # =========================================================================
-    # TOOLTIP AND HIGHLIGHT UPDATE (line chart hover)
-    # =========================================================================
-    @callback(
-        [Output("tooltip-content", "children"),
-         Output("hover-highlight", "style")],
-        [Input("overview-chart", "hoverData")],
-        [State("week-data-store", "data"),
-         State("dept-filter", "value"),
-         State("current-week-range", "data")],
-        prevent_initial_call=True
-    )
-    def update_tooltip_and_highlight(hoverData, weekData, selectedDepts, weekRange):
-        """Update tooltip and vertical line indicator on hover (bbox-based position, as before)."""
-        base_style = {
-            "position": "absolute",
-            "top": "10px",
-            "bottom": "30px",
-            "width": "4px",
-            "pointerEvents": "none",
-            "borderRadius": "2px",
-            "transition": "all 0.1s ease"
-        }
-        default_tooltip = [
-            html.Div("Hover over", style={"color": "#999", "textAlign": "center"}),
-            html.Div("the chart", style={"color": "#999", "textAlign": "center"})
-        ]
-
-        if not hoverData or not hoverData.get("points"):
-            return default_tooltip, {**base_style, "display": "none", "left": "40px", "backgroundColor": "rgba(52, 152, 219, 0.6)"}
-
-        point = hoverData["points"][0]
-        week = round(point["x"])
-
-        # Extract hovered department from customdata
-        hovered_dept = None
-        if "customdata" in point and point["customdata"]:
-            customdata = point["customdata"]
-            if isinstance(customdata, list) and len(customdata) > 0:
-                hovered_dept = customdata[0]
-
-        if week < 1 or week > 52:
-            return default_tooltip, {**base_style, "display": "none", "left": "40px", "backgroundColor": "rgba(52, 152, 219, 0.6)"}
-
-        # Position from bbox (center of the point)
-        bbox = point.get("bbox", {})
-        x0 = bbox.get("x0", 40)
-        x1 = bbox.get("x1", x0 + 10)
-        xCenter = (x0 + x1) / 2
-
-        tooltip_children = build_tooltip_content(
-            week, weekData or {}, selectedDepts or [], _services_df, weekRange or [1, 52]
-        )
-
-        line_color = "rgba(52, 152, 219, 0.7)"
-        if hovered_dept and DEPT_COLORS.get(hovered_dept):
-            line_color = _hex_to_rgba(DEPT_COLORS[hovered_dept], 0.8)
-
-        highlight_style = {
-            **base_style,
-            "display": "block",
-            "left": f"{xCenter - 2}px",
-            "backgroundColor": line_color
-        }
-        return tooltip_children, highlight_style
-    
-    # =========================================================================
-    # VISIBLE RANGE TRACKING (for pan/zoom sync)
+    # VIEWPORT TRACKING (for pan/zoom sync)
     # =========================================================================
     @callback(
         Output("visible-week-range", "data"),
@@ -135,7 +35,6 @@ def register_overview_callbacks():
         if not relayoutData:
             return slider_range or [1, 52]
         
-        # Extract x-axis range from relayoutData
         if 'xaxis.range[0]' in relayoutData and 'xaxis.range[1]' in relayoutData:
             xMin = relayoutData['xaxis.range[0]']
             xMax = relayoutData['xaxis.range[1]']
@@ -150,7 +49,95 @@ def register_overview_callbacks():
         return no_update
     
     # =========================================================================
-    # UPDATE QUALITY MINI KPIs on hover (if quality mini widget is present)
+    # HOVER -> STORE (for cross-widget linking)
+    # =========================================================================
+    @callback(
+        Output("hovered-week-store", "data"),
+        Input("overview-chart", "hoverData"),
+        prevent_initial_call=True
+    )
+    def update_hovered_week_store(hoverData):
+        """Update hovered-week-store when user hovers over Overview chart."""
+        if not hoverData or not hoverData.get("points"):
+            return None
+        
+        point = hoverData["points"][0]
+        week = int(round(point.get("x", 0)))
+        
+        if week < 1 or week > 52:
+            return None
+        
+        hovered_dept = None
+        if "customdata" in point and point["customdata"]:
+            customdata = point["customdata"]
+            if isinstance(customdata, list) and len(customdata) > 0:
+                hovered_dept = customdata[0]
+        
+        return {"week": week, "department": hovered_dept}
+    
+    # =========================================================================
+    # TOOLTIP AND HOVER LINE (working version: overview hover only, bbox-based)
+    # =========================================================================
+    @callback(
+        [Output("tooltip-content", "children"),
+         Output("hover-highlight", "style")],
+        Input("overview-chart", "hoverData"),
+        [State("week-data-store", "data"),
+         State("dept-filter", "value"),
+         State("current-week-range", "data")],
+        prevent_initial_call=True
+    )
+    def update_tooltip_and_highlight(hoverData, weekData, selectedDepts, weekRange):
+        base_style = {
+            "position": "absolute",
+            "top": "10px",
+            "bottom": "30px",
+            "width": "4px",
+            "pointerEvents": "none",
+            "borderRadius": "2px",
+            "transition": "all 0.1s ease"
+        }
+        default_tooltip = [
+            html.Div("Hover over", style={"color": "#999", "textAlign": "center"}),
+            html.Div("the chart", style={"color": "#999", "textAlign": "center"})
+        ]
+        hidden_style = {**base_style, "display": "none", "left": "40px", "backgroundColor": "rgba(52, 152, 219, 0.6)"}
+        week_range = weekRange or [1, 52]
+
+        if not hoverData or not hoverData.get("points"):
+            return default_tooltip, hidden_style
+
+        point = hoverData["points"][0]
+        week = int(round(point["x"]))
+        hovered_dept = None
+        if "customdata" in point and point["customdata"]:
+            cd = point["customdata"]
+            if isinstance(cd, list) and len(cd) > 0:
+                hovered_dept = cd[0]
+        if week < 1 or week > 52:
+            return default_tooltip, hidden_style
+
+        bbox = point.get("bbox", {})
+        x0 = bbox.get("x0", 40)
+        x1 = bbox.get("x1", x0 + 10)
+        xCenter = (x0 + x1) / 2
+
+        tooltip_children = build_tooltip_content(
+            week, weekData or {}, selectedDepts or [], _services_df, week_range
+        )
+        line_color = "rgba(52, 152, 219, 0.7)"
+        if hovered_dept and DEPT_COLORS.get(hovered_dept):
+            line_color = _hex_to_rgba(DEPT_COLORS[hovered_dept], 0.8)
+
+        return tooltip_children, {
+            **base_style,
+            "display": "block",
+            "left": f"{xCenter - 2}px",
+            "backgroundColor": line_color
+        }
+    
+    # =========================================================================
+    # UPDATE QUALITY MINI KPIs on hover
     # =========================================================================
     @callback(
         [Output("quality-mini-staff-total", "children"),
@@ -174,7 +161,6 @@ def register_overview_callbacks():
         
         _staff_schedule_df = get_staff_schedule_data()
         
-        # Default styles
         default_morale_style = {"fontSize": "13px", "fontWeight": "700", "color": "#3498db"}
         hover_morale_style = {"fontSize": "13px", "fontWeight": "700", "color": "#e67e22"}
         
@@ -183,24 +169,21 @@ def register_overview_callbacks():
         else:
             week_range = tuple(week_range)
         
-        # Empty figure for sparkline
         empty_fig = go.Figure()
         empty_fig.update_layout(margin=dict(l=0, r=0, t=0, b=0), height=80)
         
         if not dept_store:
             return "--", " staff", [], "--", default_morale_style, " morale", [], empty_fig
         
-        # Get settings from store
         selected_depts = dept_store.get("selected_depts", [])
         dept_info = dept_store.get("dept_info", [])
         avg_morale = dept_store.get("avg_morale", 0)
         total_staff = dept_store.get("total_staff", 0)
         hide_anomalies = dept_store.get("hide_anomalies", False)
         
-        # Default: no hover - show totals
         if not hovered_data or not hovered_data.get("week"):
             sparkline_fig = create_quality_mini_sparkline(
-                _services_df, selected_depts, week_range, 
+                _services_df, selected_depts, week_range,
                 highlighted_week=None, hide_anomalies=hide_anomalies
             )
             
@@ -229,12 +212,10 @@ def register_overview_callbacks():
                 sparkline_fig
             )
         
-        # Hovering: show week-specific data
         week = hovered_data["week"]
         hovered_dept = hovered_data.get("department")
         highlight_color = DEPT_COLORS.get(hovered_dept, "#3498db") if hovered_dept else "#3498db"
         
-        # Get per-department data for this week
         week_staff_total = 0
         week_staff_per_dept = {}
         week_morale_per_dept = {}
@@ -249,7 +230,7 @@ def register_overview_callbacks():
             week_staff_total += staff_count
             
             week_row = _services_df[
-                (_services_df['service'] == dept) & 
+                (_services_df['service'] == dept) &
                 (_services_df['week'] == week)
             ]
             if not week_row.empty:
@@ -259,7 +240,7 @@ def register_overview_callbacks():
         
         staff_breakdown = [
             html.Span([
-                html.Span(f"{week_staff_per_dept.get(info['dept'], 0)}", 
+                html.Span(f"{week_staff_per_dept.get(info['dept'], 0)}",
                           style={"color": info['color'], "fontWeight": "600", "fontSize": "9px"}),
                 html.Span(f" {info['label']} ", style={"fontSize": "7px", "color": "#95a5a6"})
             ]) for info in dept_info
@@ -267,14 +248,14 @@ def register_overview_callbacks():
         
         morale_breakdown = [
             html.Span([
-                html.Span(f"{week_morale_per_dept.get(info['dept'], 0):.0f}", 
+                html.Span(f"{week_morale_per_dept.get(info['dept'], 0):.0f}",
                           style={"color": info['color'], "fontWeight": "600", "fontSize": "9px"}),
                 html.Span(f" {info['label']} ", style={"fontSize": "7px", "color": "#95a5a6"})
             ]) for info in dept_info
         ] if len(dept_info) > 1 else []
         
         sparkline_fig = create_quality_mini_sparkline(
-            _services_df, selected_depts, week_range, 
+            _services_df, selected_depts, week_range,
             highlighted_week=week, hide_anomalies=hide_anomalies,
             highlight_color=highlight_color
         )

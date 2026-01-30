@@ -414,27 +414,23 @@ def create_network_for_week(staff_impacts, department, week, metric='morale', cu
             
             abs_impact = abs(row[impact_col])
             normalized_impact = abs_impact / max_impact if max_impact > 0 else 0
-            
-            # BORDER ENCODING: color = direction (green/red), width = magnitude of impact
             impact_value = row[impact_col]
-            impact_threshold = max_impact * 0.01
-            BORDER_WIDTH_MIN = 0
-            BORDER_WIDTH_MAX = 8
+            impact_threshold = max_impact * 0.01 if max_impact > 0 else 0
             
+            # Fixed size for ALL nodes (doctors, nurses, assistants); interaction never changes size
+            STAFF_NODE_SIZE = 24
+            size = float(STAFF_NODE_SIZE)
+            # Border always drawn; thickness = impact magnitude, color = direction (green/red/gray)
+            BORDER_WIDTH_MIN = 1
+            BORDER_WIDTH_MAX = 5
+            border_width_impact = BORDER_WIDTH_MIN + normalized_impact * (BORDER_WIDTH_MAX - BORDER_WIDTH_MIN)
+            border_width_impact = max(1, round(border_width_impact))
             if abs(impact_value) < impact_threshold:
-                border_color_impact = 'transparent'
-                border_width_impact = 0
+                border_color_impact = '#bdc3c7'  # neutral gray when no meaningful impact
+            elif impact_value >= 0:
+                border_color_impact = '#27ae60'  # green = positive
             else:
-                if impact_value >= 0:
-                    border_color_impact = '#27ae60'  # Green - positive
-                else:
-                    border_color_impact = '#e74c3c'  # Red - negative
-                border_width_impact = BORDER_WIDTH_MIN + normalized_impact * (BORDER_WIDTH_MAX - BORDER_WIDTH_MIN)
-                border_width_impact = max(1, round(border_width_impact))
-            
-            # Same fill size for all: total size = inner + 2*border so border grows outward
-            STAFF_NODE_INNER = 24
-            size = float(STAFF_NODE_INNER + 2 * border_width_impact)
+                border_color_impact = '#e74c3c'  # red = negative
             
             if custom_working is not None:
                 is_working = staff_id_val in custom_working
@@ -474,9 +470,12 @@ def create_comparison_bars(department, week, morale_val, sat_val, is_predicted=F
     """Create compact comparison bar charts with predicted/actual indicator.
     
     Uses semantic red/green for the week bar to show good/bad performance at a glance.
+    Always shows grey Avg bar + week bar (both bars visible).
     """
-    morale_diff = morale_val - avg_morale if avg_morale else 0
-    sat_diff = sat_val - avg_satisfaction if avg_satisfaction else 0
+    avg_morale = avg_morale if avg_morale is not None else 0.0
+    avg_satisfaction = avg_satisfaction if avg_satisfaction is not None else 0.0
+    morale_diff = morale_val - avg_morale
+    sat_diff = sat_val - avg_satisfaction
     
     label_suffix = "*" if is_predicted else ""
     
@@ -484,15 +483,15 @@ def create_comparison_bars(department, week, morale_val, sat_val, is_predicted=F
     week_color_morale = '#27ae60' if morale_diff >= 0 else '#e74c3c'
     week_color_sat = '#27ae60' if sat_diff >= 0 else '#e74c3c'
     
-    # Bar positioning: numeric x for precise control
+    # Bar positioning: numeric x for precise control (two bars: Avg, then W{week})
     bar_width = 0.35
     x_positions = [0, 0.45]  # Close together
     
-    # MORALE
+    # MORALE (grey Avg bar + red/green week bar)
     morale_fig = go.Figure()
     morale_fig.add_trace(go.Bar(
         x=x_positions,
-        y=[avg_morale, morale_val],
+        y=[float(avg_morale), float(morale_val)],
         marker_color=['#bdc3c7', week_color_morale],
         marker_line_color=['#bdc3c7', '#e67e22' if is_predicted else week_color_morale],
         marker_line_width=[0, 3 if is_predicted else 0],
@@ -528,11 +527,11 @@ def create_comparison_bars(department, week, morale_val, sat_val, is_predicted=F
         paper_bgcolor='white'
     )
     
-    # SATISFACTION
+    # SATISFACTION (grey Avg bar + red/green week bar)
     sat_fig = go.Figure()
     sat_fig.add_trace(go.Bar(
         x=x_positions,
-        y=[avg_satisfaction, sat_val],
+        y=[float(avg_satisfaction), float(sat_val)],
         marker_color=['#bdc3c7', week_color_sat],
         marker_line_color=['#bdc3c7', '#e67e22' if is_predicted else week_color_sat],
         marker_line_width=[0, 3 if is_predicted else 0],
@@ -1314,23 +1313,20 @@ def create_quality_widget(services_df, staff_schedule_df, selected_depts, week_r
                 ]
             ),
             
-            # RIGHT: Bar charts + placeholders (40%)
+            # RIGHT: Bar charts (Avg + W1) + save config (40%)
             html.Div(
                 style={'flex': '0.4', 'display': 'flex', 'flexDirection': 'column', 'gap': '5px', 'minWidth': '0'},
                 children=[
-                    # Top row: Status + Bar charts side by side
+                    # Top row: Morale and Satisfaction comparison (grey Avg bar + red/green W1 bar)
                     html.Div(style={'display': 'flex', 'gap': '5px', 'flexShrink': '0'}, children=[
-                        # Morale chart
                         html.Div(style={'flex': '1', 'display': 'flex', 'flexDirection': 'column'}, children=[
-                            html.Div(style={'textAlign': 'center', 'fontSize': '8px', 'color': '#7f8c8d'},
-                                     children="vs Avg"),
+                            html.Div(style={'textAlign': 'center', 'fontSize': '8px', 'color': '#7f8c8d'}, children="vs Avg Morale"),
                             dcc.Graph(id='morale-comparison-chart', figure=morale_fig,
                                       config={'displayModeBar': False}, style={'height': '120px'})
                         ]),
-                        # Satisfaction chart
                         html.Div(style={'flex': '1', 'display': 'flex', 'flexDirection': 'column'}, children=[
-                            html.Div(id='prediction-status', 
-                                     style={'textAlign': 'center', 'fontSize': '8px', 'minHeight': '14px'}),
+                            html.Div(id='prediction-status', style={'textAlign': 'center', 'fontSize': '8px', 'minHeight': '14px'}),
+                            html.Div(style={'textAlign': 'center', 'fontSize': '8px', 'color': '#7f8c8d'}, children="W1 actual Satisfaction"),
                             dcc.Graph(id='satisfaction-comparison-chart', figure=sat_fig,
                                       config={'displayModeBar': False}, style={'height': '120px'})
                         ])

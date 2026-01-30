@@ -168,7 +168,8 @@ def register_quality_callbacks():
          Output('prediction-status', 'children'),
          Output('selected-week-display', 'children'),
          Output('working-ids-store', 'data'),
-         Output('network-week-display', 'children')],
+         Output('network-week-display', 'children'),
+         Output('current-department-store', 'data')],
         [Input('quality-week-slider', 'value'),
          Input('hovered-week-store', 'data'),  # Unified: line chart hover drives network week
          Input('primary-dept-store', 'data'),
@@ -211,7 +212,7 @@ def register_quality_callbacks():
         
         if not primary_dept or selected_week is None:
             w = selected_week or 1
-            return [], w, slider_marks, empty_context, empty_fig, empty_fig, default_count, default_store, "", str(w), [], f"Week {w}"
+            return [], w, slider_marks, empty_context, empty_fig, empty_fig, default_count, default_store, "", str(w), [], f"Week {w}", no_update
         
         department = primary_dept  # Changed: Use primary dept directly
         
@@ -244,7 +245,7 @@ def register_quality_callbacks():
         week_data = _week_data_cache.get(cache_key)
         if week_data is None:
             # No staff data at all: keep slider at selected week so other graphs show it
-            return [], selected_week, slider_marks, empty_context, empty_fig, empty_fig, default_count, default_store, "", str(selected_week), [], f"Week {selected_week}"
+            return [], selected_week, slider_marks, empty_context, empty_fig, empty_fig, default_count, default_store, "", str(selected_week), [], f"Week {selected_week}", no_update
         
         # Gray week = selected week has no staff; use nearest week with staff for node graph only
         # Slider and store stay at selected_week so line/bar/PCP/violin show the selected week
@@ -255,14 +256,10 @@ def register_quality_callbacks():
         
         week_impacts = week_data[display_week]
         
-        # Get averages
-        if dept_averages and not dept_changed:
-            avg_morale = dept_averages['morale']
-            avg_satisfaction = dept_averages['satisfaction']
-        else:
-            dept_services = _services_df[_services_df['service'] == department]
-            avg_morale = dept_services['staff_morale'].mean()
-            avg_satisfaction = dept_services['patient_satisfaction'].mean()
+        # Get averages for comparison bars (always from data so grey Avg bar is visible; store can be 0 in unified)
+        dept_services = _services_df[_services_df['service'] == department]
+        avg_morale = float(dept_services['staff_morale'].mean()) if not dept_services.empty else 0.0
+        avg_satisfaction = float(dept_services['patient_satisfaction'].mean()) if not dept_services.empty else 0.0
         
         # Create week context chart (update on week/dept change; use display_week for content)
         context_fig = create_week_context_chart(_services_df, department, display_week)
@@ -382,7 +379,7 @@ def register_quality_callbacks():
         # Only node graph shows display_week when selected week is gray (no staff)
         week_label = f"Week {selected_week}" if display_week == selected_week else f"Week {selected_week} (no staff — showing {display_week})"
         return (elements, selected_week, slider_marks, context_fig, morale_fig, sat_fig, 
-                count_display, custom_team, status_text, str(selected_week), working_ids, week_label)
+                count_display, custom_team, status_text, str(selected_week), working_ids, week_label, department)
     
     # Callback for saving configurations
     @callback(

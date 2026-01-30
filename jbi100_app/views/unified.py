@@ -342,7 +342,7 @@ def create_unified_content():
                     ]),
                 ],
             ),
-            # RIGHT: Morale/Satisfaction charts + save config (40%) – same as quality.py
+            # RIGHT: Morale/Satisfaction comparison (Avg + W1 bars) + save config (40%)
             html.Div(
                 style={"flex": "0.4", "display": "flex", "flexDirection": "column", "gap": "5px", "minWidth": "0"},
                 children=[
@@ -354,6 +354,7 @@ def create_unified_content():
                         ]),
                         html.Div(style={"flex": "1", "display": "flex", "flexDirection": "column"}, children=[
                             html.Div(id="prediction-status", style={"textAlign": "center", "fontSize": "8px", "minHeight": "14px"}),
+                            html.Div(style={"textAlign": "center", "fontSize": "8px", "color": "#7f8c8d"}, children="W1 actual Satisfaction"),
                             dcc.Graph(id="satisfaction-comparison-chart", figure=_empty_bar,
                                       config={"displayModeBar": False}, style={"height": "120px"}),
                         ]),

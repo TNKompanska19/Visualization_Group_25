@@ -7,10 +7,8 @@ CRITICAL: Implements all chart updates for the unified single-tab layout:
 2. PCP (Parallel Coordinates Plot) with proper labels and linking
 3. Cross-widget synchronization via current-week-range (line chart zoom ↔ PCP brush)
 
-Interaction Requirements:
-- Zoom line chart (select week range) → PCP shows same week range
-- Brush PCP (Week axis) → line chart zooms to that week range
-- No hover linking between line chart and PCP (zoom/range only)
+NOTE: The hover line on the overview chart is handled by overview_callbacks using bbox positioning.
+      We do NOT redraw the chart on hover to avoid lag.
 """
 
 from dash import callback, Output, Input, State, ctx, no_update, html
@@ -21,7 +19,7 @@ import numpy as np
 
 from jbi100_app.config import (
     DEPT_COLORS, DEPT_LABELS, DEPT_LABELS_SHORT, 
-    ZOOM_THRESHOLDS, SEMANTIC_COLORS
+    ZOOM_THRESHOLDS, SEMANTIC_COLORS, get_event_icon_svg
 )
 from jbi100_app.data import get_services_data
 from jbi100_app.views.overview import get_zoom_level
@@ -43,7 +41,7 @@ def _hex_to_rgba(hex_color, alpha=0.5):
 def create_overview_figure(df, selected_depts, week_range, show_events=True, hide_anomalies=False):
     """
     Create the overview line chart with dual subplots (Satisfaction + Acceptance).
-    Hover highlight is drawn by overlay (hover-highlight div), not in figure, to avoid lag.
+    Hover highlight is drawn by CSS overlay (hover-highlight div) for instant response.
     """
     week_min, week_max = week_range
     zoom_level = get_zoom_level(week_range)
@@ -126,6 +124,46 @@ def create_overview_figure(df, selected_depts, week_range, show_events=True, hid
                               annotation_text=f"μ={mean_val:.0f}", annotation_position="right",
                               annotation=dict(font_size=8, font_color=DEPT_COLORS.get(dept, "#999")))
     
+    # Event markers
+    if show_events:
+        events_in_range = df[(df["event"] != "none") & (df["service"].isin(selected_depts))]
+        events_by_week = {}
+        for week in events_in_range["week"].unique():
+            week_events = events_in_range[events_in_range["week"] == week]
+            events_by_dept = {}
+            for _, row in week_events.iterrows():
+                dept = row["service"]
+                evt = row["event"]
+                if dept not in events_by_dept:
+                    events_by_dept[dept] = []
+                if evt not in events_by_dept[dept]:
+                    events_by_dept[dept].append(evt)
+            events_by_week[week] = events_by_dept
+        
+        for week, events_by_dept in events_by_week.items():
+            fig.add_vline(x=week, line_dash="dot", line_color="#dddddd", line_width=1, opacity=0.3)
+            all_events = []
+            for dept, dept_events in events_by_dept.items():
+                for evt in dept_events:
+                    all_events.append((dept, evt))
+            num_events = len(all_events)
+            y_center = 0.50
+            y_spacing = 0.035
+            y_start = y_center + ((num_events - 1) * y_spacing / 2)
+            week_span = week_max - week_min + 1
+            icon_sizey = 0.04
+            icon_sizex = icon_sizey * 0.35 * week_span
+            for idx, (dept, evt) in enumerate(all_events):
+                y_pos = y_start - (idx * y_spacing)
+                icon_src = get_event_icon_svg(evt, DEPT_COLORS.get(dept, "#999"))
+                if icon_src:
+                    fig.add_layout_image(
+                        source=icon_src, x=week, y=y_pos,
+                        xref="x", yref="paper",
+                        sizex=icon_sizex, sizey=icon_sizey,
+                        xanchor="center", yanchor="middle", layer="above"
+                    )
+    
     dtick = 1 if zoom_level == "detail" else 4
     
     fig.update_layout(
@@ -150,23 +188,24 @@ def create_overview_figure(df, selected_depts, week_range, show_events=True, hid
     return fig
 
 
-def create_pcp_figure(df, selected_depts, week_range):
+ANOMALY_WEEKS = [3, 6, 9, 12, 15, 18, 21, 24, 27, 30, 33, 36, 39, 42, 45, 48, 51]
+
+
+def create_pcp_figure(df, selected_depts, week_range, hide_anomalies=False):
     """
     Create Parallel Coordinates Plot showing multivariate hospital data.
-    
-    Focus + context: always show all 52 weeks. The current week_range is applied
-    as constraintrange on the Week axis so Plotly shows selected weeks in color
-    (focus) and the rest in gray (context). Double-click / clear brush to reset.
     """
     week_min, week_max = week_range
     full_range = (week_min == 1 and week_max == 52)
 
-    # Use FULL data (all weeks 1-52) so we get focus + context: selected range
-    # in color, rest in gray via constraintrange
     filtered = df[
         (df["week"] >= 1) & (df["week"] <= 52) &
         (df["service"].isin(selected_depts))
     ].copy()
+    
+    if hide_anomalies:
+        mask = ~filtered["week"].isin(ANOMALY_WEEKS)
+        filtered = filtered.loc[mask].copy()
 
     if filtered.empty:
         fig = go.Figure()
@@ -175,11 +214,9 @@ def create_pcp_figure(df, selected_depts, week_range):
         fig.update_layout(height=400, margin=dict(l=60, r=60, t=40, b=40))
         return fig
 
-    # Create department color mapping (numeric for Plotly)
     dept_to_num = {dept: i for i, dept in enumerate(selected_depts)}
     filtered["dept_num"] = filtered["service"].map(dept_to_num)
 
-    # Week dimension always full range [1, 52]; constraintrange = selected range (focus)
     week_dim = dict(label="Week", values=filtered["week"], range=[1, 52])
     if not full_range:
         week_dim["constraintrange"] = [week_min, week_max]
@@ -195,7 +232,6 @@ def create_pcp_figure(df, selected_depts, week_range):
         dict(label="Morale", values=filtered["staff_morale"], range=[0, 100]),
     ]
 
-    # Create discrete colorscale from department colors
     colorscale = []
     n_depts = len(selected_depts)
     for i, dept in enumerate(selected_depts):
@@ -211,7 +247,7 @@ def create_pcp_figure(df, selected_depts, week_range):
             showscale=False,
         ),
         dimensions=dimensions,
-        labelangle=0,  # Horizontal labels so they are fully visible
+        labelangle=0,
         labelside="top",
         labelfont=dict(size=10, color="#2c3e50"),
         tickfont=dict(size=8),
@@ -219,7 +255,7 @@ def create_pcp_figure(df, selected_depts, week_range):
 
     fig.update_layout(
         height=420,
-        margin=dict(l=80, r=80, t=70, b=45),  # Extra top/bottom so axis labels are not cut off
+        margin=dict(l=80, r=80, t=70, b=45),
         paper_bgcolor="white",
         plot_bgcolor="white",
     )
@@ -228,16 +264,9 @@ def create_pcp_figure(df, selected_depts, week_range):
 
 
 def create_kde_figure(df, selected_depts, metric, highlight_value=None, hovered_dept=None):
-    """
-    Create KDE (Kernel Density Estimate) histogram for semantic zoom.
-    
-    Munzner Justification:
-    - KDE shows distribution shape better than histogram bins
-    - Highlight region shows where current value sits in distribution
-    """
+    """Create KDE histogram for semantic zoom."""
     from scipy import stats
     
-    # Filter by hovered department if provided
     if hovered_dept:
         filtered = df[df["service"] == hovered_dept]
         color = DEPT_COLORS.get(hovered_dept, "#ccc")
@@ -254,14 +283,12 @@ def create_kde_figure(df, selected_depts, metric, highlight_value=None, hovered_
         fig.update_layout(height=170, margin=dict(l=5, r=5, t=25, b=20))
         return fig
     
-    # Compute KDE
     kde = stats.gaussian_kde(values)
     x_range = np.linspace(-10, 115, 200)
     y_density = kde(x_range)
     
     fig = go.Figure()
     
-    # Main KDE curve
     fig.add_trace(go.Scatter(
         x=x_range, y=y_density,
         mode='lines', fill='tozeroy',
@@ -270,7 +297,6 @@ def create_kde_figure(df, selected_depts, metric, highlight_value=None, hovered_
         hoverinfo='skip'
     ))
     
-    # Highlight region if value provided
     if highlight_value is not None:
         highlight_width = 3
         mask = (x_range >= highlight_value - highlight_width) & (x_range <= highlight_value + highlight_width)
@@ -305,6 +331,7 @@ def register_unified_callbacks():
     
     # =========================================================================
     # 1. OVERVIEW CHART UPDATE (responds to dept, week range, toggles)
+    # NOTE: Does NOT respond to hovered-week-store to avoid lag
     # =========================================================================
     @callback(
         Output("overview-chart", "figure"),
@@ -315,7 +342,7 @@ def register_unified_callbacks():
         prevent_initial_call=False
     )
     def update_overview_chart(selected_depts, week_range, show_events, hide_anomalies):
-        """Update the overview line chart. Hover highlight is overlay only (no redraw on hover)."""
+        """Update the overview line chart."""
         if not selected_depts:
             selected_depts = ["emergency"]
         if not week_range:
@@ -327,25 +354,26 @@ def register_unified_callbacks():
         return create_overview_figure(_services_df, selected_depts, week_range, show, hide)
     
     # =========================================================================
-    # 2. PCP UPDATE (responds to dept and week range only; no hover)
+    # 2. PCP UPDATE
     # =========================================================================
     @callback(
         Output("pcp-chart", "figure"),
-        [Input("dept-filter", "value"),
+        [Input("hide-anomalies-toggle", "value"),
+         Input("dept-filter", "value"),
          Input("current-week-range", "data")],
         prevent_initial_call=False
     )
-    def update_pcp_chart(selected_depts, week_range):
-        """Update the Parallel Coordinates Plot. Week range from line chart zoom only."""
+    def update_pcp_chart(hide_anomalies_list, selected_depts, week_range):
+        """Update the PCP."""
         if not selected_depts:
             selected_depts = ["emergency"]
         if not week_range:
             week_range = [1, 52]
-        
-        return create_pcp_figure(_services_df, selected_depts, week_range)
+        hide = hide_anomalies_list is not None and "hide" in (hide_anomalies_list if isinstance(hide_anomalies_list, list) else [])
+        return create_pcp_figure(_services_df, selected_depts, week_range, hide_anomalies=hide)
     
     # =========================================================================
-    # 3. KDE SEMANTIC ZOOM (show/hide based on zoom level + update on hover)
+    # 3. KDE SEMANTIC ZOOM
     # =========================================================================
     @callback(
         [Output("kde-section", "style"),
@@ -358,23 +386,14 @@ def register_unified_callbacks():
         prevent_initial_call=False
     )
     def update_kde_semantic_zoom(week_range, hover_data, selected_depts):
-        """
-        SEMANTIC ZOOM: Show KDE histograms when zoomed to detail/quarter level.
-        
-        Munzner Justification (Semantic Zoom - Ch. 11):
-        - At overview level: Focus on trends (line chart only)
-        - At detail level: Show distributions (KDE appears)
-        - This follows "Overview first, zoom and filter, details on demand"
-        """
+        """Show KDE histograms when zoomed to detail/quarter level."""
         if not week_range:
             week_range = [1, 52]
         if not selected_depts:
             selected_depts = ["emergency"]
         
         zoom_level = get_zoom_level(week_range)
-        week_span = week_range[1] - week_range[0] + 1
         
-        # Determine visibility based on zoom level
         show_kde = zoom_level in ["detail", "quarter"]
         
         kde_style = {
@@ -385,7 +404,6 @@ def register_unified_callbacks():
             "flexShrink": "0",
         }
         
-        # Extract hovered department and value
         hovered_dept = None
         hovered_week = None
         highlight_sat = None
@@ -395,13 +413,11 @@ def register_unified_callbacks():
             point = hover_data["points"][0]
             hovered_week = round(point.get("x", 0))
             
-            # Get department from customdata
             if "customdata" in point and point["customdata"]:
                 customdata = point["customdata"]
                 if isinstance(customdata, list) and len(customdata) > 0:
                     hovered_dept = customdata[0]
             
-            # Get values for hovered week/dept
             if hovered_dept and 1 <= hovered_week <= 52:
                 week_data = _services_df[
                     (_services_df["service"] == hovered_dept) &
@@ -411,11 +427,9 @@ def register_unified_callbacks():
                     highlight_sat = week_data["patient_satisfaction"].values[0]
                     highlight_acc = week_data["acceptance_rate"].values[0]
         
-        # Create KDE figures
         sat_fig = create_kde_figure(_services_df, selected_depts, "patient_satisfaction", highlight_sat, hovered_dept)
         acc_fig = create_kde_figure(_services_df, selected_depts, "acceptance_rate", highlight_acc, hovered_dept)
         
-        # Zoom indicator text
         if zoom_level == "detail":
             indicator = f"🔍 Detail (W{week_range[0]}-{week_range[1]})"
         elif zoom_level == "quarter":
@@ -426,7 +440,7 @@ def register_unified_callbacks():
         return kde_style, sat_fig, acc_fig, indicator
     
     # =========================================================================
-    # 4. PCP BRUSH (Week axis) → UPDATE WEEK RANGE (line chart zooms to that range)
+    # 4. PCP BRUSH → UPDATE WEEK RANGE
     # =========================================================================
     @callback(
         Output("current-week-range", "data", allow_duplicate=True),
@@ -435,10 +449,9 @@ def register_unified_callbacks():
         prevent_initial_call=True
     )
     def sync_week_range_from_pcp_brush(restyle_data, current_range):
-        """Brush Week axis: zoom line chart to that range. Clear brush / double-click → reset to 52 weeks."""
+        """Brush Week axis: zoom line chart to that range."""
         if not restyle_data or not isinstance(restyle_data, list) or len(restyle_data) == 0:
             return no_update
-        # restyleData format: [edits_dict, trace_indices]; edits has keys like "dimensions[0].constraintrange"
         edits = restyle_data[0] if isinstance(restyle_data[0], dict) else None
         if not edits:
             return no_update
@@ -446,17 +459,18 @@ def register_unified_callbacks():
         if key not in edits:
             return no_update
         val = edits[key]
-        # Brush cleared (null/empty) → reset to 52 weeks
         if val is None or (isinstance(val, (list, tuple)) and len(val) == 0):
             return [1, 52]
-        # Value can be [[min, max]] or [min, max]
         if isinstance(val, (list, tuple)) and len(val) >= 1:
             r = val[0] if isinstance(val[0], (list, tuple)) else val
             if isinstance(r, (list, tuple)) and len(r) >= 2:
-                w_min = max(1, int(round(float(r[0]))))
-                w_max = min(52, int(round(float(r[1]))))
+                def _scalar(x):
+                    if isinstance(x, (list, tuple)) and len(x) >= 1:
+                        return float(x[0])
+                    return float(x)
+                w_min = max(1, int(round(_scalar(r[0]))))
+                w_max = min(52, int(round(_scalar(r[1]))))
                 span = w_max - w_min + 1
-                # Full range or nearly full = reset to 52 weeks (double-click / clear brush)
                 if span >= 51 or (w_min <= 2 and w_max >= 51):
                     return [1, 52]
                 if w_min < w_max:
@@ -477,7 +491,6 @@ def register_unified_callbacks():
         if not relayout_data:
             return no_update
         
-        # Check for x-axis zoom
         if 'xaxis.range[0]' in relayout_data and 'xaxis.range[1]' in relayout_data:
             x_min = relayout_data['xaxis.range[0]']
             x_max = relayout_data['xaxis.range[1]']
@@ -485,7 +498,6 @@ def register_unified_callbacks():
             if new_range[0] < new_range[1]:
                 return new_range
         
-        # Also check xaxis2 (shared subplot)
         if 'xaxis2.range[0]' in relayout_data and 'xaxis2.range[1]' in relayout_data:
             x_min = relayout_data['xaxis2.range[0]']
             x_max = relayout_data['xaxis2.range[1]']
@@ -493,7 +505,6 @@ def register_unified_callbacks():
             if new_range[0] < new_range[1]:
                 return new_range
         
-        # Check for autorange (double-click reset)
         if relayout_data.get('xaxis.autorange') or relayout_data.get('xaxis2.autorange'):
             return [1, 52]
         
@@ -508,7 +519,7 @@ def register_unified_callbacks():
         prevent_initial_call=True
     )
     def sync_slider_from_week_range(week_range):
-        """Sync slider when week range changes (e.g., from chart zoom)."""
+        """Sync slider when week range changes."""
         if not week_range:
             return [1, 52]
         return week_range
