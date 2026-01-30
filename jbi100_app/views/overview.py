@@ -5,7 +5,7 @@ JBI100 Visualization - Group 25
 BIDIRECTIONAL LINKING (Munzner's coordinated multiple views):
 - Line chart zoom → PCP shows brush on week axis
 - PCP week brush → Line chart x-axis zooms
-- Semantic zoom: KDE histograms appear at detail/quarter zoom levels
+- Semantic zoom: KDE histograms appear at detail/quarter zoom levels (≤13 weeks)
 """
 
 import plotly.graph_objects as go
@@ -21,10 +21,19 @@ from jbi100_app.config import (
 
 
 # -----------------------------------------------------------------------------
-# Zoom logic
+# Zoom logic for SEMANTIC ZOOM
 # -----------------------------------------------------------------------------
 def get_zoom_level(week_range):
-    """Determine zoom level for semantic zoom."""
+    """
+    Determine zoom level for semantic zoom.
+    
+    Justification (Munzner Ch. 11 - Focus+Context):
+    - Overview: Show all data, hide detail
+    - Quarter: Show distributions (KDE visible)
+    - Detail: Show individual points + distributions
+    
+    Returns: "detail" (≤8 weeks), "quarter" (≤13 weeks), or "overview"
+    """
     if not week_range:
         return "overview"
     span = week_range[1] - week_range[0] + 1
@@ -49,8 +58,8 @@ def _hex_to_rgba(hex_color, alpha=0.5):
     return f'rgba({r},{g},{b},{alpha})'
 
 
-def _build_discrete_colorscale(hex_colors, alpha=0.35):
-    """Build discrete colorscale for PCP."""
+def _build_discrete_colorscale(hex_colors, alpha=0.4):
+    """Build discrete colorscale for PCP with proper transparency."""
     n = len(hex_colors)
     if n <= 1:
         c = _hex_to_rgba(hex_colors[0] if n == 1 else "#999", alpha)
@@ -291,12 +300,12 @@ def create_histogram(df, selected_depts, metric, highlight_value=None, hovered_d
     title_text = f"{base_title} - {DEPT_LABELS_SHORT.get(hovered_dept, hovered_dept)}" if hovered_dept else base_title
     
     fig.update_layout(
-        height=160,
-        margin=dict(l=5, r=5, t=20, b=20),
+        height=170,
+        margin=dict(l=8, r=8, t=25, b=20),
         plot_bgcolor="white",
         paper_bgcolor="rgba(0,0,0,0)",
-        title=dict(text=title_text, font=dict(size=9, color="#666"), x=0.5, y=0.95),
-        xaxis=dict(range=[-10, 115], tickvals=[0, 25, 50, 75, 100], tickfont=dict(size=7), showgrid=False),
+        title=dict(text=title_text, font=dict(size=10, color="#555"), x=0.5, y=0.95),
+        xaxis=dict(range=[-10, 115], tickvals=[0, 25, 50, 75, 100], tickfont=dict(size=8), showgrid=False),
         yaxis=dict(showticklabels=False, showgrid=False),
         showlegend=False
     )
@@ -305,10 +314,17 @@ def create_histogram(df, selected_depts, metric, highlight_value=None, hovered_d
 
 
 # -----------------------------------------------------------------------------
-# PCP (Parallel Coordinates) - Shows brush for week range
+# PCP (Parallel Coordinates) - FIXED: Better margins and labels
 # -----------------------------------------------------------------------------
 def create_pcp_figure(df, selected_depts, week_range, brush_state=None, hovered_week=None):
-    """Create PCP with constraintrange for week linking."""
+    """
+    Create PCP with constraintrange for week linking.
+    
+    FIXED: 
+    - Increased margins so axis labels are fully visible
+    - Shorter axis labels that don't truncate
+    - Title moved to HTML (not here) to prevent overlap
+    """
     week_min, week_max = week_range if week_range else (1, 52)
 
     if selected_depts:
@@ -321,14 +337,14 @@ def create_pcp_figure(df, selected_depts, week_range, brush_state=None, hovered_
     dept_to_code = {d: i for i, d in enumerate(dept_order)}
     if "service" in dff.columns and dept_order:
         dept_codes = dff["service"].map(dept_to_code).fillna(0).astype(float).values
-        colorscale = _build_discrete_colorscale([DEPT_COLORS.get(d, "#999") for d in dept_order], alpha=0.45)
+        colorscale = _build_discrete_colorscale([DEPT_COLORS.get(d, "#999") for d in dept_order], alpha=0.5)
         cmax = max(1, len(dept_order) - 1)
     else:
         dept_codes = np.zeros(len(dff))
-        colorscale = _build_discrete_colorscale(["#999"], alpha=0.45)
+        colorscale = _build_discrete_colorscale(["#999"], alpha=0.5)
         cmax = 1
 
-    # PCP columns (must match DataFrame column names); short labels that fit without truncation
+    # PCP columns with SHORT labels that won't truncate
     pcp_columns = [
         ("week", "Week"),
         ("available_beds", "Beds"),
@@ -336,7 +352,7 @@ def create_pcp_figure(df, selected_depts, week_range, brush_state=None, hovered_
         ("patients_admitted", "Admitted"),
         ("patients_refused", "Refused"),
         ("acceptance_rate", "Accept %"),
-        ("patient_satisfaction", "Satisfaction"),
+        ("patient_satisfaction", "Satisf."),
         ("staff_morale", "Morale")
     ]
     
@@ -373,49 +389,51 @@ def create_pcp_figure(df, selected_depts, week_range, brush_state=None, hovered_
             cmax=cmax
         ),
         dimensions=dimensions,
-        labelangle=-25,
-        labelfont=dict(size=10, color="#555"),
-        tickfont=dict(size=9, color="#444")
+        labelangle=0,  # Horizontal labels - easier to read
+        labelfont=dict(size=11, color="#333"),
+        tickfont=dict(size=9, color="#555")
     ))
 
-    # Week range annotation
+    # Week range annotation (top-right)
     if week_min == 1 and week_max == 52:
-        range_text = "All weeks (1-52)"
+        range_text = "Weeks 1-52"
     else:
         range_text = f"Weeks {week_min}-{week_max}"
 
-    fig.update_layout(
-        height=400,
-        margin=dict(l=68, r=68, t=38, b=38),
-        paper_bgcolor="white",
-        plot_bgcolor="white",
-        font=dict(size=9),
-        annotations=[
-            dict(
-                text=range_text,
-                x=1.0, y=1.02, xref="paper", yref="paper",
-                showarrow=False,
-                font=dict(size=9, color="#e67e22"),
-                xanchor="right"
-            )
-        ]
-    )
-
-    # Hovered week annotation (top-left so it doesn't overlap Week axis)
+    annotations = [
+        dict(
+            text=range_text,
+            x=1.0, y=1.05, xref="paper", yref="paper",
+            showarrow=False,
+            font=dict(size=10, color="#e67e22", weight="bold"),
+            xanchor="right"
+        )
+    ]
+    
+    # Hovered week annotation (top-left)
     if hovered_week is not None:
-        fig.add_annotation(
+        annotations.append(dict(
             text=f"Hovered: W{hovered_week}",
-            x=0.02, y=0.98, xref="paper", yref="paper",
+            x=0.0, y=1.05, xref="paper", yref="paper",
             showarrow=False,
             font=dict(size=10, color="#3498db", weight="bold"),
-            xanchor="left", yanchor="top"
-        )
+            xanchor="left"
+        ))
+
+    fig.update_layout(
+        height=420,
+        margin=dict(l=80, r=80, t=50, b=40),  # INCREASED margins for axis labels
+        paper_bgcolor="white",
+        plot_bgcolor="white",
+        font=dict(size=10),
+        annotations=annotations
+    )
 
     return fig
 
 
 # -----------------------------------------------------------------------------
-# Expanded Layout - Line charts + PCP + semantic zoom KDE
+# Expanded Layout (for widget mode - kept for compatibility)
 # -----------------------------------------------------------------------------
 def create_overview_expanded(df, selected_depts, week_range, show_events=True, hide_anomalies=False):
     """Create the expanded overview widget with semantic zoom."""
@@ -488,7 +506,7 @@ def create_overview_expanded(df, selected_depts, week_range, show_events=True, h
             ]
         )
         
-        # Tooltip section - only for line charts
+        # Tooltip section
         tooltip_section = html.Div(
             id="side-tooltip",
             style={
@@ -544,19 +562,17 @@ def create_overview_expanded(df, selected_depts, week_range, show_events=True, h
                 ]
             )
             
-            # Line charts + KDE + tooltip in a row
             line_charts_row = html.Div(
                 style={"display": "flex", "gap": "8px", "height": "350px"},
                 children=[chart_section, kde_section, tooltip_section]
             )
         else:
-            # Overview level: just line charts + tooltip (no KDE)
             line_charts_row = html.Div(
                 style={"display": "flex", "gap": "8px", "height": "350px"},
                 children=[chart_section, tooltip_section]
             )
         
-        # PCP section - separate below line charts
+        # PCP section
         pcp_section = html.Div(
             style={"flexShrink": "0", "marginTop": "6px"},
             children=[

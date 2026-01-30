@@ -272,7 +272,7 @@ def generate_stylesheet(working_ids):
         {'selector': '[role_name = "nurse"]', 'style': {'background-color': '#AF7AC5'}},
         {'selector': '[role_name = "nursing_assistant"]', 
          'style': {'background-color': '#58D68D'}},
-        # Default staff style - size = magnitude, border color = direction
+        # Default staff style - fixed size, border = impact strength (color = direction)
         {'selector': '[node_type = "staff"]',
          'style': {
              'background-color': 'data(color)', 'label': 'data(label)', 'color': '#2c3e50',
@@ -415,31 +415,26 @@ def create_network_for_week(staff_impacts, department, week, metric='morale', cu
             abs_impact = abs(row[impact_col])
             normalized_impact = abs_impact / max_impact if max_impact > 0 else 0
             
-            # SIZE ENCODING with Stevens' Power Law correction (M2_03)
-            # Area exponent N = 0.7 → users underestimate
-            # Correction: Area = W^(1/N) = W^(1/0.7) = W^1.43
-            # This way perceived sensation S = W (no bias)
-            min_size = 14
-            max_size = 40
-            corrected_impact = pow(normalized_impact, 1.0 / 0.7) if normalized_impact > 0 else 0
-            size = min_size + corrected_impact * (max_size - min_size)
-            
-            # BORDER ENCODING: color = direction (diverging scale)
-            # Green = positive impact, Red = negative impact
-            # No border if impact is ~0 (threshold for visual noise reduction)
+            # BORDER ENCODING: color = direction (green/red), width = magnitude of impact
             impact_value = row[impact_col]
-            impact_threshold = max_impact * 0.01  # 1% of max = effectively zero
+            impact_threshold = max_impact * 0.01
+            BORDER_WIDTH_MIN = 0
+            BORDER_WIDTH_MAX = 8
             
             if abs(impact_value) < impact_threshold:
-                # No meaningful impact - no border
                 border_color_impact = 'transparent'
                 border_width_impact = 0
-            elif impact_value >= 0:
-                border_color_impact = '#27ae60'  # Green - positive
-                border_width_impact = 3
             else:
-                border_color_impact = '#e74c3c'  # Red - negative
-                border_width_impact = 3
+                if impact_value >= 0:
+                    border_color_impact = '#27ae60'  # Green - positive
+                else:
+                    border_color_impact = '#e74c3c'  # Red - negative
+                border_width_impact = BORDER_WIDTH_MIN + normalized_impact * (BORDER_WIDTH_MAX - BORDER_WIDTH_MIN)
+                border_width_impact = max(1, round(border_width_impact))
+            
+            # Same fill size for all: total size = inner + 2*border so border grows outward
+            STAFF_NODE_INNER = 24
+            size = float(STAFF_NODE_INNER + 2 * border_width_impact)
             
             if custom_working is not None:
                 is_working = staff_id_val in custom_working
@@ -1309,7 +1304,7 @@ def create_quality_widget(services_df, staff_schedule_df, selected_depts, week_r
                             html.Span("+", style={'marginRight': '2px'}),
                             html.Span("●", style={'color': '#e74c3c', 'fontSize': '10px'}),
                             html.Span("−", style={'marginRight': '4px'}),
-                            html.Span("| size = strength", style={'color': '#7f8c8d'})
+                            html.Span("| border = strength", style={'color': '#7f8c8d'})
                         ]),
                         # Separator
                         html.Span("|", style={'color': '#ccc'}),
