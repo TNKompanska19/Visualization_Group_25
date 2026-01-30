@@ -131,9 +131,20 @@ button:active {
 /* Quality week slider alignment with bar chart (range 0-53 with phantom weeks) */
 #quality-week-slider {
     /* Slider covers weeks 1-52, chart covers 0-53 */
-    /* Week 1 in chart is at 1/53 of plot area, so add ~2% padding */
     padding-left: calc(7px + 1.887%) !important;
     padding-right: calc(7px + 1.887%) !important;
+}
+
+/* Staff Network (T5): visible week control so slider + current week are clear */
+.network-week-control {
+    flex: 1;
+    max-width: 280px;
+}
+.network-week-control .rc-slider-track {
+    background-color: #3498db;
+}
+.network-week-control .rc-slider-handle {
+    border-color: #3498db;
 }
 
 

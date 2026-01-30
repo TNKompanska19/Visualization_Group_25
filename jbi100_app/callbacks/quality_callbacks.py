@@ -141,7 +141,21 @@ def register_quality_callbacks():
         State('role-colors-store', 'data')
     )
     
+    # Sync node-graph week selection to other graphs (line chart, bar chart, violin)
+    # When user selects week via quality-week-slider, update hovered-week-store so highlights sync
+    @callback(
+        Output("hovered-week-store", "data", allow_duplicate=True),
+        Input("quality-week-slider", "value"),
+        prevent_initial_call=True,
+    )
+    def sync_week_from_node_graph(slider_value):
+        """Propagate node graph week selection to line/bar/violin highlights."""
+        if slider_value is None:
+            return no_update
+        return {"week": int(slider_value)}
+    
     # Main callback for week/dept changes and node clicks
+    # Unified layout: week comes from hovered-week-store when set; otherwise quality-week-slider
     @callback(
         [Output('staff-network-weekly', 'elements'),
          Output('quality-week-slider', 'value'),
@@ -153,24 +167,36 @@ def register_quality_callbacks():
          Output('custom-team-store', 'data'),
          Output('prediction-status', 'children'),
          Output('selected-week-display', 'children'),
-         Output('working-ids-store', 'data')],
+         Output('working-ids-store', 'data'),
+         Output('network-week-display', 'children'),
+         Output('current-department-store', 'data')],
         [Input('quality-week-slider', 'value'),
-         Input('primary-dept-store', 'data'),  # Changed: Use primary dept instead of dept-filter
+         Input('hovered-week-store', 'data'),  # Unified: line chart hover drives network week
+         Input('primary-dept-store', 'data'),
          Input('hide-anomalies-toggle', 'value'),
          Input('staff-network-weekly', 'tapNodeData'),
-         Input('impact-metric-store', 'data')],  # Added: Listen to metric toggle
+         Input('impact-metric-store', 'data')],
         [State('custom-team-store', 'data'),
          State('dept-averages-store', 'data'),
          State('current-department-store', 'data'),
          State('staff-network-weekly', 'elements')]
     )
-    def update_network_and_charts(selected_week, primary_dept, hide_anomalies_list, 
+    def update_network_and_charts(slider_week, hovered_store, primary_dept, hide_anomalies_list, 
                                    tap_data, impact_metric, custom_team, dept_averages, stored_dept, current_elements):
-        """Handle week changes, department changes, and node clicks."""
+        """Handle week changes (from slider or hovered-week-store), department changes, and node clicks."""
+        # Who triggered: if user moved the slider, respect slider; if hover from other graphs, use hovered week
+        triggered_id = ctx.triggered_id
+        hovered_week = hovered_store.get("week") if isinstance(hovered_store, dict) and hovered_store.get("week") else None
+        if triggered_id == "quality-week-slider":
+            selected_week = slider_week if slider_week is not None else 1
+        elif triggered_id == "hovered-week-store" and hovered_week is not None:
+            selected_week = hovered_week
+        else:
+            selected_week = hovered_week if hovered_week is not None else (slider_week or 1)
         
         hide_anomalies = "hide" in (hide_anomalies_list or [])
         slider_marks = create_week_slider_marks(hide_anomalies)
-        metric = impact_metric or 'morale'  # Default to morale
+        metric = impact_metric or 'morale'
         
         # Empty defaults
         empty_fig = go.Figure()
@@ -184,27 +210,25 @@ def register_quality_callbacks():
         ])
         default_store = {'active': False, 'working_ids': []}
         
-        # Use primary dept (from new store) instead of selected_depts[0]
         if not primary_dept or selected_week is None:
-            return [], selected_week or 1, slider_marks, empty_context, empty_fig, empty_fig, default_count, default_store, "", str(selected_week or 1), []
+            w = selected_week or 1
+            return [], w, slider_marks, empty_context, empty_fig, empty_fig, default_count, default_store, "", str(w), [], f"Week {w}", no_update
         
         department = primary_dept  # Changed: Use primary dept directly
         
-        # Get what triggered this callback
-        triggered_id = ctx.triggered_id
+        # triggered_id already set above for week selection logic
         triggered_prop = ctx.triggered[0]['prop_id'] if ctx.triggered else ''
         
         # Check if department changed
         dept_changed = stored_dept and stored_dept != department
         
-        # Handle anomaly weeks
+        # Handle anomaly weeks (for node-graph content only)
         adjusted_week = selected_week
         if selected_week in ANOMALY_WEEKS:
             if hide_anomalies:
                 valid_weeks = [w for w in range(1, 53) if w not in ANOMALY_WEEKS]
                 adjusted_week = min(valid_weeks, key=lambda w: abs(w - selected_week))
             else:
-                # Can't show anomaly week data - snap to nearest valid
                 valid_weeks = [w for w in range(1, 53) if w not in ANOMALY_WEEKS]
                 adjusted_week = min(valid_weeks, key=lambda w: abs(w - selected_week))
         
@@ -219,33 +243,35 @@ def register_quality_callbacks():
                 _week_data_cache[cache_key] = week_data
         
         week_data = _week_data_cache.get(cache_key)
-        if week_data is None or adjusted_week not in week_data:
-            return [], adjusted_week, slider_marks, empty_context, empty_fig, empty_fig, default_count, default_store, "", str(adjusted_week), []
+        if week_data is None:
+            # No staff data at all: keep slider at selected week so other graphs show it
+            return [], selected_week, slider_marks, empty_context, empty_fig, empty_fig, default_count, default_store, "", str(selected_week), [], f"Week {selected_week}", no_update
         
-        week_impacts = week_data[adjusted_week]
-        
-        # Get averages
-        if dept_averages and not dept_changed:
-            avg_morale = dept_averages['morale']
-            avg_satisfaction = dept_averages['satisfaction']
+        # Gray week = selected week has no staff; use nearest week with staff for node graph only
+        # Slider and store stay at selected_week so line/bar/PCP/violin show the selected week
+        if adjusted_week not in week_data:
+            display_week = min(week_data.keys(), key=lambda w: abs(w - selected_week))
         else:
-            dept_services = _services_df[_services_df['service'] == department]
-            avg_morale = dept_services['staff_morale'].mean()
-            avg_satisfaction = dept_services['patient_satisfaction'].mean()
+            display_week = adjusted_week
         
-        # Create week context chart (update on week/dept change)
-        context_fig = create_week_context_chart(_services_df, department, adjusted_week)
+        week_impacts = week_data[display_week]
+        
+        # Get averages for comparison bars (always from data so grey Avg bar is visible; store can be 0 in unified)
+        dept_services = _services_df[_services_df['service'] == department]
+        avg_morale = float(dept_services['staff_morale'].mean()) if not dept_services.empty else 0.0
+        avg_satisfaction = float(dept_services['patient_satisfaction'].mean()) if not dept_services.empty else 0.0
+        
+        # Create week context chart (update on week/dept change; use display_week for content)
+        context_fig = create_week_context_chart(_services_df, department, display_week)
         
         # Determine if we need to regenerate elements
-        # Option B: Week changes do NOT regenerate elements (preserves positions)
-        # Only regenerate when: dept changes, metric changes, or no elements exist
         node_clicked = 'tapNodeData' in triggered_prop and tap_data is not None
         metric_changed = triggered_id == 'impact-metric-store'
-        week_changed = triggered_id == 'quality-week-slider'
+        week_changed = triggered_id == 'quality-week-slider' or triggered_id == 'hovered-week-store'
         
-        # CRITICAL: Remove week-slider from element regeneration triggers
-        # This implements Option B: preserve node positions on week change
+        # When week comes from hover (unified layout), regenerate so we show that week's staff
         need_new_elements = (triggered_id == 'primary-dept-store' or 
+                            triggered_id == 'hovered-week-store' or
                             dept_changed or 
                             metric_changed or
                             current_elements is None or 
@@ -253,7 +279,7 @@ def register_quality_callbacks():
         
         # Determine working staff based on what triggered the callback
         if node_clicked and not dept_changed and not need_new_elements:
-            # Node was clicked - check if it's a staff node
+            # Node was clicked - check if it's a staff node (works for all departments including emergency)
             node_type = tap_data.get('node_type')
             
             if node_type == 'staff':
@@ -287,11 +313,11 @@ def register_quality_callbacks():
                 context_fig = no_update
         
         elif need_new_elements:
-            # Dept or metric changed - reset and regenerate elements
+            # Dept or metric changed - reset and regenerate elements (all depts including emergency)
             working_ids = week_impacts[week_impacts['working_this_week']]['staff_id'].tolist()
             custom_team = {'active': False, 'working_ids': working_ids}
-            elements = create_network_for_week(week_impacts, department, adjusted_week, metric,
-                                               custom_working=None, include_all_edges=True)
+            elements = create_network_for_week(week_impacts, department, display_week, metric,
+                                               custom_working=None, include_all_edges=True)  # all edges so click-to-toggle works
         
         elif week_changed:
             # OPTION B: Week changed - reset custom team, update working_ids, but DON'T regenerate elements
@@ -327,17 +353,17 @@ def register_quality_callbacks():
                                         style={'color': '#e67e22', 'fontSize': '8px'})
         else:
             dept_services = _services_df[_services_df['service'] == department]
-            week_row = dept_services[dept_services['week'] == adjusted_week]
+            week_row = dept_services[dept_services['week'] == display_week]
             if not week_row.empty:
                 morale_val = week_row['staff_morale'].values[0]
                 sat_val = week_row['patient_satisfaction'].values[0]
             else:
                 morale_val, sat_val = avg_morale, avg_satisfaction
             is_predicted = False
-            status_text = html.Span(f"W{adjusted_week} actual", style={'color': '#3498db', 'fontSize': '8px'})
+            status_text = html.Span(f"W{display_week} actual", style={'color': '#3498db', 'fontSize': '8px'})
         
-        # Create bar charts
-        morale_fig, sat_fig = create_comparison_bars(department, adjusted_week, morale_val, sat_val,
+        # Create bar charts (use display_week for node-graph content)
+        morale_fig, sat_fig = create_comparison_bars(department, display_week, morale_val, sat_val,
                                                       is_predicted, avg_morale, avg_satisfaction)
         
         # Working count display
@@ -349,8 +375,11 @@ def register_quality_callbacks():
                       style={'fontSize': '10px', 'color': '#e67e22', 'marginLeft': '3px'})
         ])
         
-        return (elements, adjusted_week, slider_marks, context_fig, morale_fig, sat_fig, 
-                count_display, custom_team, status_text, str(adjusted_week), working_ids)
+        # Slider and store stay at selected_week so other graphs (line/bar/PCP/violin) show it
+        # Only node graph shows display_week when selected week is gray (no staff)
+        week_label = f"Week {selected_week}" if display_week == selected_week else f"Week {selected_week} (no staff — showing {display_week})"
+        return (elements, selected_week, slider_marks, context_fig, morale_fig, sat_fig, 
+                count_display, custom_team, status_text, str(selected_week), working_ids, week_label, department)
     
     # Callback for saving configurations
     @callback(
