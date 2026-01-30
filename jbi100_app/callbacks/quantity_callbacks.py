@@ -71,6 +71,28 @@ def _add_hover_highlight(fig, week, y_range):
                       fillcolor="rgba(52, 152, 219, 0.15)", line=dict(width=0), layer="below")
 
 
+# ---- Hover on stacked bar → hovered-week-store (enables linking) ----
+@callback(
+    Output("hovered-week-store", "data", allow_duplicate=True),
+    Input("stacked-beds-demand-chart", "hoverData"),
+    prevent_initial_call=True,
+)
+def update_hovered_week_from_bars(hoverData):
+    if not hoverData or not hoverData.get("points"):
+        return None
+    point = hoverData["points"][0]
+    week_val = point.get("x")
+    if week_val is None:
+        return None
+    try:
+        week = int(round(float(week_val)))
+    except (TypeError, ValueError):
+        return None
+    if week < 1 or week > 52:
+        return None
+    return {"week": week, "department": None}
+
+
 # ---- Stacked bar: available beds vs demand (unified layout) ----
 @callback(
     Output("stacked-beds-demand-chart", "figure"),
