@@ -222,8 +222,8 @@ def create_overview_charts(df, selected_depts, week_range, show_events=True, hid
                     )
     
     fig.update_layout(
-        height=350,
-        margin=dict(l=50, r=60, t=10, b=40),
+        height=380,
+        margin=dict(l=58, r=58, t=18, b=48),
         hovermode="closest",
         showlegend=False,
         plot_bgcolor="white",
@@ -328,15 +328,15 @@ def create_pcp_figure(df, selected_depts, week_range, brush_state=None, hovered_
         colorscale = _build_discrete_colorscale(["#999"], alpha=0.45)
         cmax = 1
 
-    # PCP columns
+    # PCP columns (must match DataFrame column names); short labels that fit without truncation
     pcp_columns = [
         ("week", "Week"),
-        ("available_beds", "Avail. Beds"),
-        ("requests", "Req."),
-        ("admissions", "Admit."),
-        ("refusals", "Refuse."),
+        ("available_beds", "Beds"),
+        ("patients_request", "Requests"),
+        ("patients_admitted", "Admitted"),
+        ("patients_refused", "Refused"),
         ("acceptance_rate", "Accept %"),
-        ("patient_satisfaction", "Sat."),
+        ("patient_satisfaction", "Satisfaction"),
         ("staff_morale", "Morale")
     ]
     
@@ -375,7 +375,7 @@ def create_pcp_figure(df, selected_depts, week_range, brush_state=None, hovered_
         dimensions=dimensions,
         labelangle=-25,
         labelfont=dict(size=10, color="#555"),
-        tickfont=dict(size=8, color="#888")
+        tickfont=dict(size=9, color="#444")
     ))
 
     # Week range annotation
@@ -385,19 +385,15 @@ def create_pcp_figure(df, selected_depts, week_range, brush_state=None, hovered_
         range_text = f"Weeks {week_min}-{week_max}"
 
     fig.update_layout(
-        height=220,
-        margin=dict(l=50, r=50, t=40, b=20),
+        height=400,
+        margin=dict(l=68, r=68, t=38, b=38),
         paper_bgcolor="white",
         plot_bgcolor="white",
-        title=dict(
-            text="Hospital Performance PCP: Capacity → Flow → Quality",
-            font=dict(size=11, color="#555"),
-            x=0.0, y=0.98, xanchor="left"
-        ),
+        font=dict(size=9),
         annotations=[
             dict(
                 text=range_text,
-                x=1.0, y=1.05, xref="paper", yref="paper",
+                x=1.0, y=1.02, xref="paper", yref="paper",
                 showarrow=False,
                 font=dict(size=9, color="#e67e22"),
                 xanchor="right"
@@ -405,14 +401,14 @@ def create_pcp_figure(df, selected_depts, week_range, brush_state=None, hovered_
         ]
     )
 
-    # Hovered week annotation
+    # Hovered week annotation (top-left so it doesn't overlap Week axis)
     if hovered_week is not None:
         fig.add_annotation(
             text=f"Hovered: W{hovered_week}",
-            x=0.0, y=1.08, xref="paper", yref="paper",
+            x=0.02, y=0.98, xref="paper", yref="paper",
             showarrow=False,
             font=dict(size=10, color="#3498db", weight="bold"),
-            xanchor="left"
+            xanchor="left", yanchor="top"
         )
 
     return fig

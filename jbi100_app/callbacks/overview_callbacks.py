@@ -189,6 +189,44 @@ def register_overview_callbacks():
     """Register all overview callbacks."""
 
     # =========================================================================
+    # 0) Overview line chart figure (unified layout: no expanded widget)
+    # =========================================================================
+    @callback(
+        Output("overview-chart", "figure"),
+        [Input("dept-filter", "value"),
+         Input("week-slider", "value"),
+         Input("current-week-range", "data"),
+         Input("show-events-toggle", "value"),
+         Input("hide-anomalies-toggle", "value"),
+         Input("hovered-week-store", "data")],
+        prevent_initial_call=False,
+    )
+    def update_overview_chart(depts, week_slider, week_range_data, show_events_list, hide_anomalies_list, hovered_store):
+        """Build line chart figure; filter by week range; highlight hovered week."""
+        week_range = week_range_data or week_slider or [1, 52]
+        week_range = list(week_range) if week_range else [1, 52]
+        selected_depts = depts or ["emergency"]
+        show_events = "show" in (show_events_list or [])
+        hide_anomalies = "hide" in (hide_anomalies_list or [])
+        w0, w1 = int(week_range[0]), int(week_range[1])
+        df = _services_df[(_services_df["week"] >= w0) & (_services_df["week"] <= w1)].copy()
+        if selected_depts:
+            df = df[df["service"].isin(selected_depts)].copy()
+        if df.empty:
+            fig = go.Figure()
+            fig.add_annotation(text="No data", x=0.5, y=0.5, xref="paper", yref="paper", showarrow=False)
+            fig.update_layout(template="plotly_white")
+            return fig
+        fig, _ = create_overview_charts(df, selected_depts, (w0, w1), show_events, hide_anomalies)
+        hovered_week = hovered_store.get("week") if isinstance(hovered_store, dict) else None
+        if hovered_week is not None and w0 <= hovered_week <= w1:
+            fig.add_vline(x=hovered_week, line_dash="solid", line_color="rgba(52, 152, 219, 0.8)",
+                          line_width=2, row=1, col=1)
+            fig.add_vline(x=hovered_week, line_dash="solid", line_color="rgba(52, 152, 219, 0.8)",
+                          line_width=2, row=2, col=1)
+        return fig
+
+    # =========================================================================
     # 1) Slider change → current-week-range
     # =========================================================================
     @callback(
@@ -258,21 +296,55 @@ def register_overview_callbacks():
     # =========================================================================
     @callback(
         Output("pcp-chart", "figure"),
-        Input("current-week-range", "data"),
-        [State("dept-filter", "value"),
-         State("expanded-widget", "data"),
-         State("hovered-week-store", "data")],
-        prevent_initial_call=True
+        [Input("current-week-range", "data"),
+         Input("dept-filter", "value")],
+        State("hovered-week-store", "data"),
+        prevent_initial_call=False,
     )
-    def update_pcp_on_range(week_range, selected_depts, expanded, hovered_store):
-        if expanded != "overview":
-            raise PreventUpdate
-        
+    def update_pcp_on_range(week_range, selected_depts, hovered_store):
+        """PCP always visible in unified layout; filter data by week range so it renders clearly."""
         week_range = week_range or [1, 52]
         selected_depts = selected_depts or ["emergency"]
         hovered_week = hovered_store.get("week") if isinstance(hovered_store, dict) else None
+        w0, w1 = int(week_range[0]), int(week_range[1])
+        df = _services_df[(_services_df["week"] >= w0) & (_services_df["week"] <= w1)].copy()
+        if selected_depts:
+            df = df[df["service"].isin(selected_depts)].copy()
+        if df.empty:
+            fig = go.Figure()
+            fig.add_annotation(text="No data", x=0.5, y=0.5, xref="paper", yref="paper", showarrow=False)
+            fig.update_layout(template="plotly_white", height=400)
+            return fig
+        return create_pcp_figure(df, selected_depts, (w0, w1), hovered_week=hovered_week)
 
-        return create_pcp_figure(_services_df, selected_depts, tuple(week_range), hovered_week=hovered_week)
+    # =========================================================================
+    # 4b) Double-click overview chart → clear hovered week
+    # =========================================================================
+    @callback(
+        Output("hovered-week-store", "data", allow_duplicate=True),
+        Input("overview-chart", "relayoutData"),
+        State("hovered-week-store", "data"),
+        prevent_initial_call=True
+    )
+    def clear_hovered_week_on_doubleclick(relayoutData, current_hovered):
+        if not relayoutData or not isinstance(relayoutData, dict):
+            raise PreventUpdate
+        if any(k for k in relayoutData if "autorange" in k and relayoutData.get(k) is True):
+            return None
+        raise PreventUpdate
+
+    # =========================================================================
+    # 4c) Network week slider → hovered-week-store (so network updates without scrolling to line chart)
+    # =========================================================================
+    @callback(
+        Output("hovered-week-store", "data", allow_duplicate=True),
+        Input("quality-week-slider", "value"),
+        prevent_initial_call=True
+    )
+    def sync_hovered_from_slider(slider_week):
+        if slider_week is None:
+            return None
+        return {"week": int(slider_week)}
 
     # =========================================================================
     # 5) Hover → hovered-week-store

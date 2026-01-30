@@ -142,6 +142,7 @@ def register_quality_callbacks():
     )
     
     # Main callback for week/dept changes and node clicks
+    # Unified layout: week comes from hovered-week-store when set; otherwise quality-week-slider
     @callback(
         [Output('staff-network-weekly', 'elements'),
          Output('quality-week-slider', 'value'),
@@ -153,24 +154,29 @@ def register_quality_callbacks():
          Output('custom-team-store', 'data'),
          Output('prediction-status', 'children'),
          Output('selected-week-display', 'children'),
-         Output('working-ids-store', 'data')],
+         Output('working-ids-store', 'data'),
+         Output('network-week-display', 'children')],
         [Input('quality-week-slider', 'value'),
-         Input('primary-dept-store', 'data'),  # Changed: Use primary dept instead of dept-filter
+         Input('hovered-week-store', 'data'),  # Unified: line chart hover drives network week
+         Input('primary-dept-store', 'data'),
          Input('hide-anomalies-toggle', 'value'),
          Input('staff-network-weekly', 'tapNodeData'),
-         Input('impact-metric-store', 'data')],  # Added: Listen to metric toggle
+         Input('impact-metric-store', 'data')],
         [State('custom-team-store', 'data'),
          State('dept-averages-store', 'data'),
          State('current-department-store', 'data'),
          State('staff-network-weekly', 'elements')]
     )
-    def update_network_and_charts(selected_week, primary_dept, hide_anomalies_list, 
+    def update_network_and_charts(slider_week, hovered_store, primary_dept, hide_anomalies_list, 
                                    tap_data, impact_metric, custom_team, dept_averages, stored_dept, current_elements):
-        """Handle week changes, department changes, and node clicks."""
+        """Handle week changes (from slider or hovered-week-store), department changes, and node clicks."""
+        # Unified: use hovered week when set; otherwise slider
+        hovered_week = hovered_store.get("week") if isinstance(hovered_store, dict) and hovered_store.get("week") else None
+        selected_week = hovered_week if hovered_week is not None else (slider_week or 1)
         
         hide_anomalies = "hide" in (hide_anomalies_list or [])
         slider_marks = create_week_slider_marks(hide_anomalies)
-        metric = impact_metric or 'morale'  # Default to morale
+        metric = impact_metric or 'morale'
         
         # Empty defaults
         empty_fig = go.Figure()
@@ -184,9 +190,9 @@ def register_quality_callbacks():
         ])
         default_store = {'active': False, 'working_ids': []}
         
-        # Use primary dept (from new store) instead of selected_depts[0]
         if not primary_dept or selected_week is None:
-            return [], selected_week or 1, slider_marks, empty_context, empty_fig, empty_fig, default_count, default_store, "", str(selected_week or 1), []
+            w = selected_week or 1
+            return [], w, slider_marks, empty_context, empty_fig, empty_fig, default_count, default_store, "", str(w), [], f"Week {w}"
         
         department = primary_dept  # Changed: Use primary dept directly
         
@@ -220,7 +226,7 @@ def register_quality_callbacks():
         
         week_data = _week_data_cache.get(cache_key)
         if week_data is None or adjusted_week not in week_data:
-            return [], adjusted_week, slider_marks, empty_context, empty_fig, empty_fig, default_count, default_store, "", str(adjusted_week), []
+            return [], adjusted_week, slider_marks, empty_context, empty_fig, empty_fig, default_count, default_store, "", str(adjusted_week), [], f"Week {adjusted_week}"
         
         week_impacts = week_data[adjusted_week]
         
@@ -237,15 +243,13 @@ def register_quality_callbacks():
         context_fig = create_week_context_chart(_services_df, department, adjusted_week)
         
         # Determine if we need to regenerate elements
-        # Option B: Week changes do NOT regenerate elements (preserves positions)
-        # Only regenerate when: dept changes, metric changes, or no elements exist
         node_clicked = 'tapNodeData' in triggered_prop and tap_data is not None
         metric_changed = triggered_id == 'impact-metric-store'
-        week_changed = triggered_id == 'quality-week-slider'
+        week_changed = triggered_id == 'quality-week-slider' or triggered_id == 'hovered-week-store'
         
-        # CRITICAL: Remove week-slider from element regeneration triggers
-        # This implements Option B: preserve node positions on week change
+        # When week comes from hover (unified layout), regenerate so we show that week's staff
         need_new_elements = (triggered_id == 'primary-dept-store' or 
+                            triggered_id == 'hovered-week-store' or
                             dept_changed or 
                             metric_changed or
                             current_elements is None or 
@@ -350,7 +354,7 @@ def register_quality_callbacks():
         ])
         
         return (elements, adjusted_week, slider_marks, context_fig, morale_fig, sat_fig, 
-                count_display, custom_team, status_text, str(adjusted_week), working_ids)
+                count_display, custom_team, status_text, str(adjusted_week), working_ids, f"Week {adjusted_week}")
     
     # Callback for saving configurations
     @callback(

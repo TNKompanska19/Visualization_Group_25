@@ -29,6 +29,7 @@ SUBTITLE_FONT_SIZE = 9
 
 
 def _filter_services(depts, week_range, hide_anomalies=False):
+    week_range = week_range or [1, 52]
     w0, w1 = int(week_range[0]), int(week_range[1])
     df = _services[(_services["week"] >= w0) & (_services["week"] <= w1)].copy()
     if depts:
@@ -39,6 +40,7 @@ def _filter_services(depts, week_range, hide_anomalies=False):
 
 
 def _filter_patients(depts, week_range, hide_anomalies=False):
+    week_range = week_range or [1, 52]
     w0, w1 = int(week_range[0]), int(week_range[1])
     df = _patients.copy()
     if depts:
@@ -69,264 +71,60 @@ def _add_hover_highlight(fig, week, y_range):
                       fillcolor="rgba(52, 152, 219, 0.15)", line=dict(width=0), layer="below")
 
 
+# ---- Stacked bar: available beds vs demand (unified layout) ----
 @callback(
-    Output("t2t3-zoom-store", "data"),
-    [Input("t2-refusal-chart", "relayoutData"), Input("t3-occupancy-chart", "relayoutData")],
-    State("week-slider", "value"), prevent_initial_call=True
-)
-def capture_linked_zoom(ref_relayout, occ_relayout, week_range):
-    if not ctx.triggered:
-        raise PreventUpdate
-    triggered_id = ctx.triggered[0]["prop_id"].split(".")[0]
-    relayout = ref_relayout if triggered_id == "t2-refusal-chart" else occ_relayout
-    if not relayout:
-        raise PreventUpdate
-    if "xaxis.range[0]" in relayout and "xaxis.range[1]" in relayout:
-        try:
-            ws = max(1, int(round(float(relayout["xaxis.range[0]"]))))
-            we = min(52, int(round(float(relayout["xaxis.range[1]"]))))
-            if ws < we:
-                return {"week_start": ws, "week_end": we, "zoomed": True}
-        except (ValueError, TypeError):
-            raise PreventUpdate
-    if "xaxis.autorange" in relayout:
-        return {"week_start": int(week_range[0]), "week_end": int(week_range[1]), "zoomed": False}
-    raise PreventUpdate
-
-
-@callback(Output("global-zoom-store", "data"), Input("t2t3-zoom-store", "data"), prevent_initial_call=True)
-def sync_global_zoom(zoom):
-    return {"source": "T2T3", **zoom} if zoom and zoom.get("zoomed") else {"zoomed": False}
-
-
-# Hover updates week, Click clears it
-@callback(
-    Output("t2t3-selected-week", "data"),
-    [Input("t2-refusal-chart", "hoverData"), Input("t3-occupancy-chart", "hoverData"),
-     Input("t2-refusal-chart", "clickData"), Input("t3-occupancy-chart", "clickData")],
-    prevent_initial_call=True
-)
-def capture_week_selection(ref_hover, occ_hover, ref_click, occ_click):
-    if not ctx.triggered:
-        raise PreventUpdate
-
-    triggered_prop = ctx.triggered[0]["prop_id"]
-
-    # Click ALWAYS clears (resets to period view)
-    if "clickData" in triggered_prop:
-        return None
-
-    # Hover updates the week
-    if "hoverData" in triggered_prop:
-        hover = ref_hover if "refusal" in triggered_prop else occ_hover
-        if hover and "points" in hover and len(hover["points"]) > 0:
-            x = hover["points"][0].get("x")
-            if x is not None:
-                try:
-                    week = int(round(float(x)))
-                    if 1 <= week <= 52:
-                        return {"week": week}
-                except (ValueError, TypeError):
-                    pass
-
-    raise PreventUpdate
-
-
-@callback(
-    Output("t2-refusal-chart", "figure"),
+    Output("stacked-beds-demand-chart", "figure"),
     [Input("dept-filter", "value"), Input("week-slider", "value"), Input("hide-anomalies-toggle", "value"),
-     Input("t2t3-zoom-store", "data"), Input("t2t3-selected-week", "data")]
+     Input("hovered-week-store", "data")],
+    prevent_initial_call=False,
 )
-def update_refusal_chart(depts, week_range, hide_anom, zoom_store, selected_week):
+def update_stacked_beds_demand(depts, week_range, hide_anom, hovered_store):
+    """Stacked bar: one bar per week in range; stack = beds (bottom), demand (top). Highlight hovered week."""
+    week_range = week_range or [1, 52]
+    depts = depts or ["emergency"]
     hide = "hide" in (hide_anom or [])
     df = _filter_services(depts, week_range, hide)
     if df.empty:
         return _empty_fig("Select departments")
-
-    df = df.copy()
-    df["ref_per_bed"] = (df["patients_refused"] / df["available_beds"]).replace([np.inf, -np.inf], np.nan).fillna(0)
-    fig = go.Figure()
-    services = _get_ordered_services(df["service"].unique())
-    y_max = df["ref_per_bed"].max() * 1.1
-    median_ref = df["ref_per_bed"].median()
-
-    for svc in services:
-        svc_df = df[df["service"] == svc].sort_values("week")
-        col = DEPT_COLORS.get(svc, "#999")
-        lbl = DEPT_LABELS.get(svc, svc)
-        fig.add_trace(go.Scatter(x=svc_df["week"], y=svc_df["ref_per_bed"], mode="lines+markers", name=lbl,
-                                 line=dict(color=col, width=2), marker=dict(size=4, color=col),
-                                 hovertemplate=f"<b>{lbl}</b><br>Week %{{x}}<br>Ref/Bed: %{{y:.2f}}<extra></extra>"))
-
-    wmin, wmax = int(week_range[0]), int(week_range[1])
-    x_range = [wmin - 0.5, wmax + 0.5]
-    zoom_txt = ""
-    if zoom_store and zoom_store.get("zoomed"):
-        x_range = [zoom_store["week_start"] - 0.5, zoom_store["week_end"] + 0.5]
-        zoom_txt = f" (Wk {zoom_store['week_start']}–{zoom_store['week_end']})"
-
-    # Add highlight for hovered week
-    if selected_week and selected_week.get("week"):
-        _add_hover_highlight(fig, selected_week["week"], [0, y_max])
-
-    fig.add_hline(y=median_ref, line_dash="dash", line_color="#95a5a6", line_width=1,
-                  annotation_text=f"Median: {median_ref:.1f}", annotation_position="right",
-                  annotation_font=dict(size=8, color="#7f8c8d"))
-
-    dtick = 4 if wmax - wmin > 26 else 2
-    fig.update_layout(
-        title=dict(
-            text=f"<b>Capacity Pressure</b>{zoom_txt}<br><span style='font-size:{SUBTITLE_FONT_SIZE}px;color:#7f8c8d'>Hover to inspect week • Click to clear</span>",
-            font=dict(size=TITLE_FONT_SIZE, color="#2c3e50"), x=0.5, xanchor="center", y=0.96),
-        template="plotly_white", margin=dict(l=50, r=10, t=45, b=45),
-        xaxis=dict(title=dict(text="Week", font=AXIS_LABEL_FONT), gridcolor=GRID_COLOR, dtick=dtick, range=x_range,
-                   tickfont=AXIS_TICK_FONT),
-        yaxis=dict(title=dict(text="Refusals per Bed", font=AXIS_LABEL_FONT), gridcolor=GRID_COLOR,
-                   tickfont=AXIS_TICK_FONT, range=[0, y_max]),
-        showlegend=False, hovermode="x unified",
-        clickmode="event",
-    )
-    return fig
-
-
-@callback(
-    Output("t3-occupancy-chart", "figure"),
-    [Input("dept-filter", "value"), Input("week-slider", "value"), Input("hide-anomalies-toggle", "value"),
-     Input("t2t3-zoom-store", "data"), Input("t2t3-selected-week", "data")]
-)
-def update_occupancy_chart(depts, week_range, hide_anom, zoom_store, selected_week):
-    hide = "hide" in (hide_anom or [])
-    df = _filter_services(depts, week_range, hide)
-    if df.empty:
-        return _empty_fig("Select departments")
-
-    df = df.copy()
-    df["occupancy"] = (df["patients_admitted"] / df["available_beds"] * 100).fillna(0)
-    fig = go.Figure()
-    wmin, wmax = int(week_range[0]), int(week_range[1])
-    ymin, ymax = df["occupancy"].min(), df["occupancy"].max()
-    y_range = [max(0, ymin - 10), max(115, ymax + 5)]
-
-    fig.add_shape(type="rect", x0=wmin - 0.5, x1=wmax + 0.5, y0=80, y1=100, fillcolor="rgba(0,158,115,0.06)",
-                  line_width=0, layer="below")
-    if y_range[1] > 100:
-        fig.add_shape(type="rect", x0=wmin - 0.5, x1=wmax + 0.5, y0=100, y1=y_range[1], fillcolor="rgba(213,94,0,0.08)",
-                      line_width=0, layer="below")
-
-    for svc in _get_ordered_services(df["service"].unique()):
-        svc_df = df[df["service"] == svc].sort_values("week")
-        col = DEPT_COLORS.get(svc, "#999")
-        lbl = DEPT_LABELS.get(svc, svc)
-        fig.add_trace(go.Scatter(x=svc_df["week"], y=svc_df["occupancy"], mode="lines+markers", name=lbl,
-                                 line=dict(color=col, width=1.5), marker=dict(size=3, color=col),
-                                 hovertemplate=f"<b>{lbl}</b><br>Week %{{x}}<br>Occ: %{{y:.0f}}%<extra></extra>"))
-
-    fig.add_hline(y=100, line_dash="dash", line_color="#D55E00", line_width=1.5, opacity=0.6)
-    fig.add_hline(y=80, line_dash="dot", line_color="#009E73", line_width=1, opacity=0.5)
-
-    x_range = [wmin - 0.5, wmax + 0.5]
-    zoom_txt = ""
-    if zoom_store and zoom_store.get("zoomed"):
-        x_range = [zoom_store["week_start"] - 0.5, zoom_store["week_end"] + 0.5]
-        zoom_txt = f" (Wk {zoom_store['week_start']}–{zoom_store['week_end']})"
-
-    if selected_week and selected_week.get("week"):
-        _add_hover_highlight(fig, selected_week["week"], y_range)
-
-    dtick = 4 if wmax - wmin > 26 else 2
-    fig.update_layout(
-        title=dict(
-            text=f"<b>Occupancy Rate</b>{zoom_txt}<br><span style='font-size:{SUBTITLE_FONT_SIZE}px;color:#7f8c8d'>80–100% optimal • >100% over-capacity</span>",
-            font=dict(size=TITLE_FONT_SIZE, color="#2c3e50"), x=0.5, xanchor="center", y=0.95),
-        template="plotly_white", margin=dict(l=45, r=10, t=50, b=40),
-        xaxis=dict(title=dict(text="Week", font=AXIS_LABEL_FONT), gridcolor=GRID_COLOR, dtick=dtick, range=x_range,
-                   tickfont=AXIS_TICK_FONT),
-        yaxis=dict(title=dict(text="Occupancy (%)", font=AXIS_LABEL_FONT), gridcolor=GRID_COLOR, range=y_range,
-                   tickfont=AXIS_TICK_FONT),
-        showlegend=False, hovermode="x unified",
-        clickmode="event",
-    )
-    return fig
-
-
-@callback(
-    Output("t2-bed-chart", "figure"),
-    [Input("dept-filter", "value"), Input("week-slider", "value"), Input("hide-anomalies-toggle", "value"),
-     Input("t2t3-zoom-store", "data"), Input("t2t3-selected-week", "data")]
-)
-def update_capacity_chart(depts, week_range, hide_anom, zoom_store, selected_week):
-    hide = "hide" in (hide_anom or [])
-    df = _filter_services(depts, week_range, hide)
-    if df.empty:
-        return _empty_fig("Select departments")
-
-    # If hovering a specific week, show that week
-    if selected_week and selected_week.get("week"):
-        w = selected_week["week"]
-        week_df = df[df["week"] == w].copy()
-        week_label = f"Week {w}"
-        if week_df.empty:
-            selected_week = None  # Fall back to period
-
-    # Otherwise show zoomed period or full range
-    if not (selected_week and selected_week.get("week")):
-        if zoom_store and zoom_store.get("zoomed"):
-            ws, we = zoom_store["week_start"], zoom_store["week_end"]
-            week_df = df[(df["week"] >= ws) & (df["week"] <= we)].copy()
-            week_df = week_df.groupby("service").agg(
-                {"available_beds": "mean", "patients_admitted": "mean", "patients_refused": "mean"}).reset_index()
-            week_label = f"Avg Wk {ws}–{we}"
-        else:
-            week_df = df.groupby("service").agg(
-                {"available_beds": "mean", "patients_admitted": "mean", "patients_refused": "mean"}).reset_index()
-            week_label = f"Avg Wk {int(week_range[0])}–{int(week_range[1])}"
-
-    if week_df.empty:
+    w0, w1 = int(week_range[0]), int(week_range[1])
+    weeks = sorted(df["week"].unique())
+    if not weeks:
         return _empty_fig("No data")
-
-    week_df = week_df.copy()
-    week_df["demand"] = week_df["patients_admitted"] + week_df["patients_refused"]
+    agg = df.groupby("week").agg(
+        available_beds=("available_beds", "sum"),
+        demand=("patients_request", "sum"),
+    ).reindex(weeks).fillna(0)
+    hovered_week = hovered_store.get("week") if isinstance(hovered_store, dict) else None
     fig = go.Figure()
-    services = _get_ordered_services(week_df["service"].unique())
-
-    dept_labels = [DEPT_LABELS.get(s, s) for s in services]
-    beds_values, demand_values, colors = [], [], []
-
-    for svc in services:
-        row = week_df[week_df["service"] == svc]
-        if len(row) > 0:
-            beds_values.append(row["available_beds"].values[0])
-            demand_values.append(row["demand"].values[0])
-            colors.append(DEPT_COLORS.get(svc, "#999"))
-
-    fig.add_trace(go.Bar(x=dept_labels, y=beds_values, showlegend=False,
-                         marker=dict(color=colors, opacity=0.4, line=dict(color=colors, width=2)),
-                         hovertemplate="<b>%{x}</b><br>Beds: %{y:.0f}<extra></extra>"))
-    fig.add_trace(go.Bar(x=dept_labels, y=demand_values, showlegend=False,
-                         marker=dict(color=colors, opacity=0.9),
-                         hovertemplate="<b>%{x}</b><br>Demand: %{y:.0f}<extra></extra>"))
-
-    for i, svc in enumerate(services):
-        row = week_df[week_df["service"] == svc]
-        if len(row) > 0:
-            beds, demand = row["available_beds"].values[0], row["demand"].values[0]
-            net = beds - demand
-            y_pos = max(beds, demand) + 2
-            color = "#27ae60" if net >= 0 else "#e74c3c"
-            fig.add_annotation(x=dept_labels[i], y=y_pos, text=f"{net:+.0f}", showarrow=False,
-                               font=dict(size=11, color=color, weight="bold"))
-
-    y_max = max(max(beds_values) if beds_values else 0, max(demand_values) if demand_values else 0) * 1.15
-
+    fig.add_trace(go.Bar(
+        x=agg.index, y=agg["available_beds"], name="Beds",
+        marker_color="#5DADE2", opacity=0.8,
+        hovertemplate="Week %{x}<br>Beds: %{y:.0f}<extra></extra>",
+    ))
+    fig.add_trace(go.Bar(
+        x=agg.index, y=agg["demand"], name="Demand",
+        marker_color="#E74C3C", opacity=0.8,
+        hovertemplate="Week %{x}<br>Demand: %{y:.0f}<extra></extra>",
+    ))
+    if hovered_week is not None and hovered_week in agg.index:
+        y_max = max(agg["available_beds"].max(), agg["demand"].max()) * 1.1
+        fig.add_vrect(
+            x0=hovered_week - 0.5, x1=hovered_week + 0.5,
+            y0=0, y1=y_max, fillcolor="rgba(52, 152, 219, 0.15)", line_width=0, layer="below",
+        )
+    y_max = max(agg["available_beds"].max(), agg["demand"].max())
+    y_upper = max(y_max * 1.15, 10)
     fig.update_layout(
+        barmode="stack",
+        height=380,
+        template="plotly_white", margin=dict(l=58, r=28, t=52, b=52),
         title=dict(
-            text=f"<b>Capacity vs Demand</b> — {week_label}<br><span style='font-size:{SUBTITLE_FONT_SIZE}px;color:#7f8c8d'>Light=Beds • Dark=Demand • Number=Net</span>",
-            font=dict(size=TITLE_FONT_SIZE, color="#2c3e50"), x=0.5, xanchor="center", y=0.93),
-        template="plotly_white", margin=dict(l=50, r=20, t=65, b=40), barmode="group",
-        xaxis=dict(title="", tickfont=dict(size=10, color="#2c3e50")),
-        yaxis=dict(title=dict(text="Count", font=AXIS_LABEL_FONT), gridcolor=GRID_COLOR, tickfont=AXIS_TICK_FONT,
-                   range=[0, y_max]),
-        showlegend=False, bargap=0.15, bargroupgap=0.05,
+            text="<b>Beds vs Demand by Week</b><br><span style='font-size:9px;color:#7f8c8d'>Hover the line chart (T1) above to highlight a week here</span>",
+            font=dict(size=TITLE_FONT_SIZE, color="#2c3e50"), x=0.5, xanchor="center", y=0.96,
+        ),
+        xaxis=dict(title="Week", gridcolor=GRID_COLOR, tickfont=AXIS_TICK_FONT),
+        yaxis=dict(title="Count", range=[0, y_upper], gridcolor=GRID_COLOR, tickfont=AXIS_TICK_FONT),
+        showlegend=True, legend=dict(orientation="h", yanchor="bottom", y=1.02, xanchor="center", x=0.5),
     )
     return fig
 
@@ -334,9 +132,13 @@ def update_capacity_chart(depts, week_range, hide_anom, zoom_store, selected_wee
 @callback(
     Output("t3-los-chart", "figure"),
     [Input("dept-filter", "value"), Input("week-slider", "value"), Input("hide-anomalies-toggle", "value"),
-     Input("t2t3-zoom-store", "data"), Input("t2t3-selected-week", "data")]
+     Input("hovered-week-store", "data")],
+    prevent_initial_call=False,
 )
-def update_los_chart(depts, week_range, hide_anom, zoom_store, selected_week):
+def update_los_chart(depts, week_range, hide_anom, hovered_store):
+    """LOS violin: full distribution for week range; when hovered week set, add horizontal line at that week's median LOS."""
+    week_range = week_range or [1, 52]
+    depts = depts or ["emergency"]
     hide = "hide" in (hide_anom or [])
     df_full = _filter_patients(depts, week_range, hide)
 
@@ -354,33 +156,23 @@ def update_los_chart(depts, week_range, hide_anom, zoom_store, selected_week):
                                 fillcolor=col, line_color=col, opacity=0.5, points=False, hoverinfo="y+name"))
 
     highlight_txt = ""
-    highlight_patients = None
+    hovered_week = hovered_store.get("week") if isinstance(hovered_store, dict) else None
 
-    if selected_week and selected_week.get("week") and "arrival_week" in df_full.columns:
-        w = selected_week["week"]
-        highlight_patients = df_full[df_full["arrival_week"] == w].copy()
-        highlight_txt = f" • Week {w}"
-    elif zoom_store and zoom_store.get("zoomed") and "arrival_week" in df_full.columns:
-        ws, we = zoom_store["week_start"], zoom_store["week_end"]
-        highlight_patients = df_full[(df_full["arrival_week"] >= ws) & (df_full["arrival_week"] <= we)].copy()
-        highlight_txt = f" • Wk {ws}–{we}"
-
-    if highlight_patients is not None and not highlight_patients.empty and len(highlight_patients) >= 2:
-        for svc in services:
-            svc_hl = highlight_patients[highlight_patients["service"] == svc]
-            if len(svc_hl) >= 2:
-                col = DEPT_COLORS.get(svc, "#999")
-                lbl = DEPT_LABELS_SHORT.get(svc, svc)
-                q1, q3, median = svc_hl["length_of_stay"].quantile(0.25), svc_hl["length_of_stay"].quantile(0.75), \
-                svc_hl["length_of_stay"].median()
-                fig.add_trace(go.Scatter(
-                    x=[lbl], y=[median], mode="markers",
-                    marker=dict(color=col, size=12, symbol="diamond", line=dict(color="#fff", width=2)),
-                    error_y=dict(type="data", symmetric=False, array=[q3 - median], arrayminus=[median - q1], color=col,
-                                 thickness=4, width=15),
-                    hovertemplate=f"<b>{lbl}</b>{highlight_txt}<br>Median: {median:.1f}d<br>IQR: {q1:.1f}–{q3:.1f}d<br>n={len(svc_hl)}<extra></extra>",
-                    showlegend=False,
-                ))
+    if hovered_week and "arrival_week" in df_full.columns:
+        highlight_patients = df_full[df_full["arrival_week"] == hovered_week].copy()
+        highlight_txt = f" • Week {hovered_week}"
+        if not highlight_patients.empty:
+            for svc in services:
+                svc_hl = highlight_patients[highlight_patients["service"] == svc]
+                if len(svc_hl) >= 1:
+                    median = svc_hl["length_of_stay"].median()
+                    col = DEPT_COLORS.get(svc, "#999")
+                    lbl = DEPT_LABELS_SHORT.get(svc, svc)
+                    fig.add_hline(
+                        y=median, line_dash="solid", line_color=col, line_width=2, opacity=0.8,
+                        annotation_text=f"W{hovered_week} {lbl}: {median:.0f}d",
+                        annotation_position="right", annotation_font=dict(size=8, color=col),
+                    )
 
     fig.add_hline(y=7, line_dash="dot", line_color="#009E73", line_width=1, opacity=0.4,
                   annotation_text="7d", annotation_position="right", annotation_font=dict(size=8, color="#009E73"))
@@ -392,10 +184,11 @@ def update_los_chart(depts, week_range, hide_anom, zoom_store, selected_week):
     blockers = (df_full["length_of_stay"] > 14).sum()
 
     fig.update_layout(
+        height=420,
         title=dict(
             text=f"<b>Length of Stay</b><br><span style='font-size:{SUBTITLE_FONT_SIZE}px;color:#7f8c8d'>Avg: {avg_los:.1f}d • Blockers: {blockers}{highlight_txt}</span>",
             font=dict(size=TITLE_FONT_SIZE, color="#2c3e50"), x=0.5, xanchor="center", y=0.94),
-        template="plotly_white", margin=dict(l=45, r=10, t=55, b=35),
+        template="plotly_white", margin=dict(l=58, r=88, t=58, b=42),
         yaxis=dict(title=dict(text="Length of Stay (days)", font=AXIS_LABEL_FONT), gridcolor=GRID_COLOR,
                    range=[0, min(df_full["length_of_stay"].max() + 3, 35)], tickfont=AXIS_TICK_FONT),
         xaxis=dict(title="", tickfont=AXIS_TICK_FONT),
@@ -404,13 +197,7 @@ def update_los_chart(depts, week_range, hide_anom, zoom_store, selected_week):
     return fig
 
 
-@callback(
-    [Output("legend-items", "children"), Output("week-header", "children"), Output("week-metrics", "children"),
-     Output("reallocation-section", "style"), Output("reallocation-text", "children")],
-    [Input("dept-filter", "value"), Input("t2t3-selected-week", "data"), Input("t2t3-zoom-store", "data"),
-     Input("week-slider", "value"), Input("hide-anomalies-toggle", "value")]
-)
-def update_context_panel(depts, selected_week, zoom_store, week_range, hide_anom):
+def _update_context_panel_placeholder(depts, selected_week, zoom_store, week_range, hide_anom):
     if not depts:
         depts = []
     hide = "hide" in (hide_anom or [])
